@@ -2376,6 +2376,10 @@ if type(save_run) == "function" and not BT.save_run_wrapped then
     BT.save_run_wrapped = true
     local save_run_ref = save_run
     save_run = function(...)
+        if G and G.F_NO_SAVING then
+            return save_run_ref(...)
+        end
+
         if not (BT.active or BT.reward_phase) then return save_run_ref(...) end
 
         G.GAME.canlaugh_barter_save = barter_save_snapshot()

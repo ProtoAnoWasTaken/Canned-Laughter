@@ -59,9 +59,12 @@ if G and G.FUNCS and type(G.FUNCS.evaluate_play) == "function" and not CannedLau
     local evaluate_play_ref = G.FUNCS.evaluate_play
     G.FUNCS.evaluate_play = function(...)
         CannedLaughter.knave_evaluating_play = true
-        local results = { evaluate_play_ref(...) }
+        local results = { pcall(evaluate_play_ref, ...) }
         CannedLaughter.knave_evaluating_play = nil
-        return unpack(results)
+        if not results[1] then
+            error(results[2])
+        end
+        return unpack(results, 2)
     end
 end
 
