@@ -308,6 +308,16 @@ function EM.can_receive_joker_edition(card, args)
         and (not args or #EM.get_editions_for_target(args, card) > 0)
 end
 
+local function copy_edition_target_pool(pool)
+    local copied_pool = {}
+
+    for _, target in ipairs(pool or {}) do
+        copied_pool[#copied_pool + 1] = target
+    end
+
+    return copied_pool
+end
+
 function EM.refresh_wheel_jokers(card, args)
     if not card then
         return {}
@@ -370,7 +380,7 @@ function EM.use_wheel_like(card, copier, args)
     end
 
     local used_card = copier or card
-    local target_pool = EM.refresh_wheel_jokers(card, args.edition_args)
+    local target_pool = copy_edition_target_pool(EM.refresh_wheel_jokers(card, args.edition_args))
 
     if not next(target_pool) then
         return
@@ -417,7 +427,7 @@ function EM.use_wheel_like(card, copier, args)
             local target = pseudorandom_element(target_pool, pseudoseed(args.target_seed))
             local edition = EM.poll_edition_for_target(args.edition_args, target)
 
-            if not (target and edition) then
+            if not target or target.removed or target.getting_sliced or not edition then
                 return true
             end
 
@@ -448,7 +458,7 @@ function EM.use_ectoplasm(card, copier)
     end
 
     local used_card = copier or card
-    local target_pool = EM.refresh_editionless_jokers(card)
+    local target_pool = copy_edition_target_pool(EM.refresh_editionless_jokers(card))
     local glitter_pool = {}
 
     for _, target in ipairs(target_pool) do
@@ -471,7 +481,7 @@ function EM.use_ectoplasm(card, copier)
         func = function()
             local target = pseudorandom_element(target_pool, pseudoseed("ectoplasm"))
 
-            if not target then
+            if not target or target.removed or target.getting_sliced then
                 return true
             end
 
@@ -505,7 +515,7 @@ function EM.use_hex(card, copier)
     end
 
     local used_card = copier or card
-    local target_pool = EM.refresh_editionless_jokers(card)
+    local target_pool = copy_edition_target_pool(EM.refresh_editionless_jokers(card))
     local glitter_pool = {}
 
     for _, target in ipairs(target_pool) do
@@ -528,7 +538,7 @@ function EM.use_hex(card, copier)
         func = function()
             local target = pseudorandom_element(target_pool, pseudoseed("hex"))
 
-            if not target then
+            if not target or target.removed or target.getting_sliced then
                 return true
             end
 
@@ -630,7 +640,10 @@ if Card and type(Card.can_use_consumeable) == "function" and not CL.edition_modi
 
         if not EM.disable_overrides()
             and self.ability
-            and (self.ability.name == "Aura" or self.ability.name == "The Wheel of Fortune")
+            and (self.ability.name == "Aura"
+                or self.ability.name == "The Wheel of Fortune"
+                or self.ability.name == "Ectoplasm"
+                or self.ability.name == "Hex")
         then
             if not skip_check and ((G.play and #G.play.cards > 0)
                 or G.CONTROLLER.locked
@@ -650,6 +663,10 @@ if Card and type(Card.can_use_consumeable) == "function" and not CL.edition_modi
 
                 if self.ability.name == "The Wheel of Fortune" then
                     return EM.can_use_wheel(self, EM.OVERRIDE_WHEEL_ARGS.edition_args)
+                end
+
+                if self.ability.name == "Ectoplasm" or self.ability.name == "Hex" then
+                    return next(EM.refresh_editionless_jokers(self)) ~= nil
                 end
             end
 
@@ -693,28 +710,28 @@ if Card and type(Card.use_consumeable) == "function" and not CL.edition_modifier
             return
         end
 
-        if not EM.disable_overrides()
-            and self.ability
-            and self.ability.name == "The Wheel of Fortune"
-            and EM.can_use_wheel(self, EM.OVERRIDE_WHEEL_ARGS.edition_args)
-        then
-            return EM.use_wheel_like(self, copier, EM.OVERRIDE_WHEEL_ARGS)
+        if not EM.disable_overrides() and self.ability and self.ability.name == "The Wheel of Fortune" then
+            if EM.can_use_wheel(self, EM.OVERRIDE_WHEEL_ARGS.edition_args) then
+                return EM.use_wheel_like(self, copier, EM.OVERRIDE_WHEEL_ARGS)
+            end
+
+            return
         end
 
-        if not EM.disable_overrides()
-            and self.ability
-            and self.ability.name == "Ectoplasm"
-            and next(EM.refresh_editionless_jokers(self))
-        then
-            return EM.use_ectoplasm(self, copier)
+        if not EM.disable_overrides() and self.ability and self.ability.name == "Ectoplasm" then
+            if next(EM.refresh_editionless_jokers(self)) then
+                return EM.use_ectoplasm(self, copier)
+            end
+
+            return
         end
 
-        if not EM.disable_overrides()
-            and self.ability
-            and self.ability.name == "Hex"
-            and next(EM.refresh_editionless_jokers(self))
-        then
-            return EM.use_hex(self, copier)
+        if not EM.disable_overrides() and self.ability and self.ability.name == "Hex" then
+            if next(EM.refresh_editionless_jokers(self)) then
+                return EM.use_hex(self, copier)
+            end
+
+            return
         end
 
         return use_consumeable_ref(self, area, copier, ...)
