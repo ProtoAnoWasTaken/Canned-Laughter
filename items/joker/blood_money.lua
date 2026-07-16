@@ -31,7 +31,23 @@ SMODS.Joker({
         return { vars = { extra.dollars, extra.reduction, extra.unlock } }
     end,
     check_for_unlock = function(self, args)
-        return args and args.type == "money" and (args.money or args.amount or G.GAME.dollars or 0) >= self.config.extra.unlock
+        if not (args and args.type == "money") then
+            return false
+        end
+
+        local number_value = CannedLaughter.playing_card_jokers
+            and CannedLaughter.playing_card_jokers.number_value
+        local amount = args.money or args.amount or (G and G.GAME and G.GAME.dollars) or 0
+        local threshold = self.config and self.config.extra and self.config.extra.unlock or 800
+
+        if type(number_value) == "function" then
+            amount = number_value(amount)
+            threshold = number_value(threshold)
+        end
+
+        return type(amount) == "number"
+            and type(threshold) == "number"
+            and amount >= threshold
     end,
     locked_loc_vars = function(self, info_queue, card)
         return { vars = { self.config.extra.unlock } }

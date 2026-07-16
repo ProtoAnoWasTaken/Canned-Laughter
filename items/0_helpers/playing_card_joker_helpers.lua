@@ -171,6 +171,28 @@ function PCJ.score_caught_fire(score_intensity)
         and earned_score >= required_score
 end
 
+function PCJ.number_value(value)
+    if type(value) == "number" then
+        return value
+    end
+
+    if type(to_number) == "function" then
+        local ok, converted = pcall(to_number, value)
+        if ok and type(converted) == "number" then
+            return converted
+        end
+    end
+
+    if type(value) == "table" and type(value.to_number) == "function" then
+        local ok, converted = pcall(value.to_number, value)
+        if ok and type(converted) == "number" then
+            return converted
+        end
+    end
+
+    return 0
+end
+
 function PCJ.random_last_hand_card()
     return pseudorandom_element(PCJ.find_cards(G and G.play, function(card)
         return PCJ.is_playing_card(card) and not card.edition
@@ -229,7 +251,7 @@ function PCJ.refund_hand(card)
 end
 
 function PCJ.blood_money_multiplier()
-    local dollars = G and G.GAME and G.GAME.dollars or 0
+    local dollars = PCJ.number_value(G and G.GAME and G.GAME.dollars or 0)
     local steps = math.max(0, math.floor(dollars / 25))
     local discount = 0.5 - (0.5 ^ (steps + 1))
 
