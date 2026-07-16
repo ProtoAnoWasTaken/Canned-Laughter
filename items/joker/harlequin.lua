@@ -62,7 +62,8 @@ local function capture_harlequin_defaults(playing_card)
     end
 
     defaults = {
-        perma_bonus = playing_card.ability and playing_card.ability.perma_bonus or 0,
+        perma_bonus = (playing_card.ability and playing_card.ability.perma_bonus or 0)
+            - (playing_card.ability and playing_card.ability.canlaugh_mathematician_bonus or 0),
         ability = {},
         edition = {},
     }
@@ -86,6 +87,7 @@ local function restore_harlequin_card(playing_card, defaults)
 
     if playing_card.ability then
         playing_card.ability.perma_bonus = defaults.perma_bonus
+            + (playing_card.ability.canlaugh_mathematician_bonus or 0)
 
         for _, field in ipairs(ABILITY_STAT_FIELDS) do
             playing_card.ability[field] = defaults.ability[field]
@@ -105,7 +107,9 @@ local function apply_harlequin_card(playing_card, defaults)
     end
 
     local base_chips = playing_card.base and playing_card.base.nominal or 0
-    playing_card.ability.perma_bonus = defaults.perma_bonus - base_chips * 0.5
+    playing_card.ability.perma_bonus = defaults.perma_bonus
+        + (playing_card.ability.canlaugh_mathematician_bonus or 0)
+        - base_chips * 0.5
 
     for _, field in ipairs(ABILITY_STAT_FIELDS) do
         local value = defaults.ability[field]
@@ -152,17 +156,62 @@ function CL.refresh_harlequin_state(ignore_card)
     end
 
     state.signature = harlequin_signature(ignore_card)
+    state.active = active
+    state.card_count = #(G and G.playing_cards or {})
+    state.dirty = false
+end
+
+function CL.mark_harlequin_state_dirty()
+    CL.harlequin_state.dirty = true
 end
 
 function CL.ensure_harlequin_state_current(ignore_card)
-    if CL.harlequin_state.signature ~= harlequin_signature(ignore_card) then
+    local state = CL.harlequin_state
+    local card_count = #(G and G.playing_cards or {})
+
+    if state.dirty
+        or state.card_count ~= card_count
+        or state.active ~= harlequin_is_active(ignore_card)
+    then
         CL.refresh_harlequin_state(ignore_card)
     end
 end
 
 function CL.harlequin_affects_card(card)
-    CL.ensure_harlequin_state_current()
     return CL.harlequin_state.defaults[card] ~= nil
+end
+
+if Card and type(Card.set_base) == "function" and not CL.harlequin_base_hook_installed then
+    CL.harlequin_base_hook_installed = true
+    local set_base_ref = Card.set_base
+
+    function Card:set_base(...)
+        local results = { set_base_ref(self, ...) }
+        CL.mark_harlequin_state_dirty()
+        return unpack(results)
+    end
+end
+
+if Card and type(Card.set_ability) == "function" and not CL.harlequin_ability_hook_installed then
+    CL.harlequin_ability_hook_installed = true
+    local set_ability_ref = Card.set_ability
+
+    function Card:set_ability(...)
+        local results = { set_ability_ref(self, ...) }
+        CL.mark_harlequin_state_dirty()
+        return unpack(results)
+    end
+end
+
+if Card and type(Card.set_edition) == "function" and not CL.harlequin_edition_hook_installed then
+    CL.harlequin_edition_hook_installed = true
+    local set_edition_ref = Card.set_edition
+
+    function Card:set_edition(...)
+        local results = { set_edition_ref(self, ...) }
+        CL.mark_harlequin_state_dirty()
+        return unpack(results)
+    end
 end
 
 function CL.configure_harlequin_edition_tooltips()
