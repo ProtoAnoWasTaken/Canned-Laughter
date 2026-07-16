@@ -3,6 +3,10 @@ SMODS.Atlas({ key = "boss_justice", path = "blind_justice.png", px = 34, py = 34
 
 local function justice_unselect_random_card()
     local highlighted = G and G.hand and G.hand.highlighted or {}
+    if #highlighted <= 1 then
+        return false
+    end
+
     local card = CL.boss_random(highlighted, "canlaugh_justice")
     if not card then
         return false
