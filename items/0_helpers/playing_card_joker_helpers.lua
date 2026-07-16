@@ -575,14 +575,18 @@ if Card and type(Card.draw) == "function" and not CL.observer_effect_draw_hook_i
                 center.atlas = atlas
                 center:set_sprite_pos({ x = 0, y = 0 })
 
-                local results = { draw_ref(self, layer, ...) }
+                local results = { pcall(draw_ref, self, layer, ...) }
 
                 center.atlas = old_atlas
                 if old_sprite_pos then
                     center:set_sprite_pos(old_sprite_pos)
                 end
 
-                return unpack(results)
+                if not results[1] then
+                    error(results[2])
+                end
+
+                return unpack(results, 2)
             end
         end
 

@@ -439,9 +439,9 @@ if Card and type(Card.update) == "function" and not CL.rules_card_update_hook_in
     function Card:update(...)
         local results = { canlaugh_update_ref(self, ...) }
 
-        if CL.rules_card_active()
-            and self.ability
+        if self.ability
             and self.ability.name == "Temperance"
+            and CL.rules_card_active()
         then
             self.ability.money = canlaugh_rules_card_temperance_money()
         end
@@ -510,11 +510,15 @@ if Card and type(Card.use_consumeable) == "function" and not CL.rules_card_use_h
             if self.ability.name == "The Hermit" then
                 local old_extra = self.ability.extra
                 self.ability.extra = math.max(old_extra or 0, G.GAME.dollars or 0)
-                local results = { canlaugh_use_consumeable_ref(self, area, copier, ...) }
+                local results = { pcall(canlaugh_use_consumeable_ref, self, area, copier, ...) }
+                if not results[1] then
+                    self.ability.extra = old_extra
+                    error(results[2])
+                end
                 canlaugh_rules_card_restore_after(function()
                     self.ability.extra = old_extra
                 end)
-                return unpack(results)
+                return unpack(results, 2)
             end
 
             if self.ability.name == "Temperance" then
@@ -523,12 +527,17 @@ if Card and type(Card.use_consumeable) == "function" and not CL.rules_card_use_h
                 local money = canlaugh_rules_card_temperance_money()
                 self.ability.extra = math.max(old_extra or 0, money)
                 self.ability.money = money
-                local results = { canlaugh_use_consumeable_ref(self, area, copier, ...) }
+                local results = { pcall(canlaugh_use_consumeable_ref, self, area, copier, ...) }
+                if not results[1] then
+                    self.ability.extra = old_extra
+                    self.ability.money = old_money
+                    error(results[2])
+                end
                 canlaugh_rules_card_restore_after(function()
                     self.ability.extra = old_extra
                     self.ability.money = old_money
                 end)
-                return unpack(results)
+                return unpack(results, 2)
             end
 
             if self.ability.name == "Ankh" then
@@ -619,13 +628,17 @@ if G and G.FUNCS and type(G.FUNCS.evaluate_round) == "function" and not CL.rules
             G.GAME.interest_cap = math.max(G.GAME.interest_cap, G.GAME.dollars or G.GAME.interest_cap)
         end
 
-        local results = { canlaugh_evaluate_round_ref(...) }
+        local results = { pcall(canlaugh_evaluate_round_ref, ...) }
 
         if old_interest_cap then
             G.GAME.interest_cap = old_interest_cap
         end
 
-        return unpack(results)
+        if not results[1] then
+            error(results[2])
+        end
+
+        return unpack(results, 2)
     end
 end
 

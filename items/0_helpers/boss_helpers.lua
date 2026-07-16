@@ -126,9 +126,12 @@ if G and G.FUNCS and G.FUNCS.play_cards_from_highlighted and not CL.baton_play_h
         local limit = G.hand.config.highlighted_limit
         G.hand.config.highlighted_limit = #G.hand.cards
         CL.baton_select_all()
-        local results = { play_cards_from_highlighted(e) }
+        local results = { pcall(play_cards_from_highlighted, e) }
         G.hand.config.highlighted_limit = limit
-        return unpack(results)
+        if not results[1] then
+            error(results[2])
+        end
+        return unpack(results, 2)
     end
 end
 
@@ -144,10 +147,13 @@ if G and G.FUNCS and G.FUNCS.discard_cards_from_highlighted and not CL.baton_dis
         G.hand.config.highlighted_limit = #G.hand.cards
         G.discard.config.card_limit = #G.hand.cards
         CL.baton_select_all()
-        local results = { discard_cards_from_highlighted(e, hook) }
+        local results = { pcall(discard_cards_from_highlighted, e, hook) }
         G.hand.config.highlighted_limit = hand_limit
         G.discard.config.card_limit = discard_limit
-        return unpack(results)
+        if not results[1] then
+            error(results[2])
+        end
+        return unpack(results, 2)
     end
 end
 
@@ -276,8 +282,11 @@ if type(ease_hands_played) == "function" and type(ease_discard) == "function" an
         local results = { ease_hands_played_ref(mod, ...) }
         if CL.boss_active("bl_canlaugh_cinnabar_saber") and not CL.saber_syncing then
             CL.saber_syncing = true
-            ease_discard_ref(mod, ...)
+            local synced_results = { pcall(ease_discard_ref, mod, ...) }
             CL.saber_syncing = nil
+            if not synced_results[1] then
+                error(synced_results[2])
+            end
         end
         return unpack(results)
     end
@@ -286,8 +295,11 @@ if type(ease_hands_played) == "function" and type(ease_discard) == "function" an
         local results = { ease_discard_ref(mod, ...) }
         if CL.boss_active("bl_canlaugh_cinnabar_saber") and not CL.saber_syncing then
             CL.saber_syncing = true
-            ease_hands_played_ref(mod, ...)
+            local synced_results = { pcall(ease_hands_played_ref, mod, ...) }
             CL.saber_syncing = nil
+            if not synced_results[1] then
+                error(synced_results[2])
+            end
         end
         return unpack(results)
     end

@@ -34,10 +34,13 @@ if type(create_card) == "function" and not CL.glitter_create_card_hook_installed
         local previous_context = CL.glitter_natural_playing_card_poll
         CL.glitter_natural_playing_card_poll = canlaugh_is_playing_card_type(card_type)
 
-        local results = { canlaugh_glitter_create_card_ref(card_type, ...) }
+        local results = { pcall(canlaugh_glitter_create_card_ref, card_type, ...) }
 
         CL.glitter_natural_playing_card_poll = previous_context
-        return unpack(results)
+        if not results[1] then
+            error(results[2])
+        end
+        return unpack(results, 2)
     end
 end
 

@@ -2381,11 +2381,14 @@ if type(save_run) == "function" and not BT.save_run_wrapped then
         G.GAME.canlaugh_barter_save = barter_save_snapshot()
         local pack_state = G.STATE
         G.STATE = G.STATES.BLIND_SELECT
-        local results = { save_run_ref(...) }
+        local results = { pcall(save_run_ref, ...) }
         G.STATE = pack_state
         if G.culled_table then G.culled_table.STATE = pack_state end
         if G.ARGS and G.ARGS.save_run then G.ARGS.save_run.STATE = pack_state end
-        return unpack(results)
+        if not results[1] then
+            error(results[2])
+        end
+        return unpack(results, 2)
     end
 end
 

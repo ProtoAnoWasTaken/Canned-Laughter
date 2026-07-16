@@ -46,10 +46,13 @@ if type(create_card) == "function" and not CL.plastic_create_card_hook_installed
         local previous_context = CL.plastic_natural_joker_poll
         CL.plastic_natural_joker_poll = card_type == "Joker"
 
-        local results = { cl_plastic_create_card_ref(card_type, ...) }
+        local results = { pcall(cl_plastic_create_card_ref, card_type, ...) }
 
         CL.plastic_natural_joker_poll = previous_context
-        return unpack(results)
+        if not results[1] then
+            error(results[2])
+        end
+        return unpack(results, 2)
     end
 end
 

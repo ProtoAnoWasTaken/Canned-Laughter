@@ -119,16 +119,72 @@ local function hand_priority(cards)
     return math.huge
 end
 
+local function prosopamnesia_assignment_cache_key(cards)
+    local parts = {}
+
+    for index, card in ipairs(cards) do
+        local base = card and card.base or {}
+        local ability = card and card.ability or {}
+        parts[index] = table.concat({
+            tostring(card and (card.sort_id or card.unique_val or card) or ""),
+            tostring(base.id or ""),
+            tostring(base.suit or ""),
+            tostring(ability.name or ""),
+            tostring(ability.effect or ""),
+            tostring(card and card.debuff or false),
+        }, ":")
+    end
+
+    return table.concat(parts, "|")
+end
+
+local function prosopamnesia_cached_assignments(cache_key)
+    local cache = CL.prosopamnesia_assignment_cache
+    return cache and cache[cache_key]
+end
+
+local function cache_prosopamnesia_assignments(cache_key, assignments)
+    CL.prosopamnesia_assignment_cache = CL.prosopamnesia_assignment_cache or {}
+    CL.prosopamnesia_assignment_cache_order = CL.prosopamnesia_assignment_cache_order or {}
+
+    if CL.prosopamnesia_assignment_cache[cache_key] then
+        return
+    end
+
+    if #CL.prosopamnesia_assignment_cache_order >= 64 then
+        local oldest_key = table.remove(CL.prosopamnesia_assignment_cache_order, 1)
+        CL.prosopamnesia_assignment_cache[oldest_key] = nil
+    end
+
+    CL.prosopamnesia_assignment_cache[cache_key] = assignments
+    CL.prosopamnesia_assignment_cache_order[#CL.prosopamnesia_assignment_cache_order + 1] = cache_key
+end
+
 local function assign_best_face_substitutions(cards)
     if not prosopamnesia_active() or not cards or #cards == 0 then
         return
     end
 
+    local cache_key = prosopamnesia_assignment_cache_key(cards)
+    local cached_assignments = prosopamnesia_cached_assignments(cache_key)
+    if cached_assignments then
+        for index, card_index in ipairs(cached_assignments.indices) do
+            local card = cards[card_index]
+            if card and card.ability then
+                card.ability.canlaugh_prosopamnesia_rank = cached_assignments.ranks[index]
+            end
+        end
+        return
+    end
+
     local face_cards = {}
 
-    for _, card in ipairs(cards) do
+    for index, card in ipairs(cards) do
         if substitutable_face_id(card) then
-            face_cards[#face_cards + 1] = card
+            face_cards[#face_cards + 1] = {
+                card = card,
+                index = index,
+            }
         end
     end
 
@@ -141,9 +197,13 @@ local function assign_best_face_substitutions(cards)
     local best_priority = math.huge
 
     local function choose_assignment(index)
+        if best_priority == 1 then
+            return
+        end
+
         if index > #face_cards then
             for assignment_index, face_card in ipairs(face_cards) do
-                face_card.ability.canlaugh_prosopamnesia_rank = assignments[assignment_index]
+                face_card.card.ability.canlaugh_prosopamnesia_rank = assignments[assignment_index]
             end
 
             local priority = hand_priority(cards)
@@ -158,17 +218,30 @@ local function assign_best_face_substitutions(cards)
             return
         end
 
-        for _, rank in ipairs(alternate_face_ids(face_cards[index])) do
+        for _, rank in ipairs(alternate_face_ids(face_cards[index].card)) do
             assignments[index] = rank
             choose_assignment(index + 1)
+
+            if best_priority == 1 then
+                break
+            end
         end
     end
 
     choose_assignment(1)
 
+    local cached_result = {
+        indices = {},
+        ranks = {},
+    }
+
     for index, face_card in ipairs(face_cards) do
-        face_card.ability.canlaugh_prosopamnesia_rank = best_assignments[index]
+        face_card.card.ability.canlaugh_prosopamnesia_rank = best_assignments[index]
+        cached_result.indices[index] = face_card.index
+        cached_result.ranks[index] = best_assignments[index]
     end
+
+    cache_prosopamnesia_assignments(cache_key, cached_result)
 end
 
 if Card and type(Card.get_id) == "function" and not CL.prosopamnesia_rank_hook_installed then
@@ -176,7 +249,7 @@ if Card and type(Card.get_id) == "function" and not CL.prosopamnesia_rank_hook_i
     local get_id_ref = Card.get_id
 
     function Card:get_id(...)
-        if prosopamnesia_active() and substitutable_face_id(self) then
+        if substitutable_face_id(self) and prosopamnesia_active() then
             local rank = self.ability and self.ability.canlaugh_prosopamnesia_rank
             if rank then
                 return rank
@@ -197,8 +270,11 @@ if G and G.FUNCS and type(G.FUNCS.get_poker_hand_info) == "function" and not CL.
         end
 
         CL.prosopamnesia_assigning_substitutions = true
-        assign_best_face_substitutions(cards)
+        local results = { pcall(assign_best_face_substitutions, cards) }
         CL.prosopamnesia_assigning_substitutions = nil
+        if not results[1] then
+            error(results[2])
+        end
         return get_poker_hand_info_ref(cards, ...)
     end
 end

@@ -423,6 +423,7 @@ local function cl_recheck_unlocks()
     end
 
     local fired = {}
+    CL.unlock_recheck_failures = CL.unlock_recheck_failures or {}
 
     local function fire_unlock(args)
         if not (G and G.GAME) then
@@ -435,7 +436,13 @@ local function cl_recheck_unlocks()
         end
 
         fired[unlock_type] = true
-        pcall(check_for_unlock, args)
+        local ok, err = pcall(check_for_unlock, args)
+        if not ok and not CL.unlock_recheck_failures[unlock_type] then
+            CL.unlock_recheck_failures[unlock_type] = true
+            if type(sendErrorMessage) == "function" then
+                sendErrorMessage("[Canned Laughter] Unlock recheck failed for " .. tostring(unlock_type) .. ": " .. tostring(err))
+            end
+        end
     end
 
     if G and G.DISCOVER_TALLIES and G.DISCOVER_TALLIES.total then
@@ -449,7 +456,11 @@ local function cl_recheck_unlocks()
 
     if G and G.ACHIEVEMENTS then
         for achievement_key, achievement in pairs(G.ACHIEVEMENTS) do
-            if achievement and achievement.mod and achievement.earned then
+            if achievement
+                and achievement.earned
+                and type(achievement_key) == "string"
+                and achievement_key:match("^ach_canlaugh_")
+            then
                 earned[achievement_key] = true
             end
         end
@@ -458,10 +469,8 @@ local function cl_recheck_unlocks()
     if G and G.SETTINGS and G.SETTINGS.ACHIEVEMENTS_EARNED then
         for achievement_key, is_earned in pairs(G.SETTINGS.ACHIEVEMENTS_EARNED) do
             if is_earned
-                and G
-                and G.ACHIEVEMENTS
-                and G.ACHIEVEMENTS[achievement_key]
-                and G.ACHIEVEMENTS[achievement_key].mod
+                and type(achievement_key) == "string"
+                and achievement_key:match("^ach_canlaugh_")
             then
                 earned[achievement_key] = true
             end
@@ -493,7 +502,6 @@ local function cl_recheck_unlocks()
         end
     end
 
-    cl_normalize_collection_order()
 end
 
 local function cl_install_unlock_recheck_hook()
