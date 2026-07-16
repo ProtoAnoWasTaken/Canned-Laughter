@@ -65,7 +65,7 @@ SMODS.Joker({
     loc_txt = {
         name = "Author Avatar",
         text = {
-            "{X:mult,C:white}X3{} Mult for each {C:attention}Blind{}",
+            "{X:mult,C:white}X3{} Mult for each {C:attention}Boss Blind{}",
             "defeated this run",
             "{C:inactive}(Currently {X:mult,C:white}X#1#{C:inactive} Mult){}",
             "All cards are considered",

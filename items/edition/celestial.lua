@@ -47,11 +47,20 @@ SMODS.Edition({
     },
     loc_vars = function(self, info_queue, card)
         local hand_key, hand = get_celestial_hand()
+        local harlequin_adjusted = CannedLaughter.harlequin_affects_card
+            and CannedLaughter.harlequin_affects_card(card)
+        local chips = hand and hand.chips or 5
+        local mult = hand and hand.mult or 1
+
+        if harlequin_adjusted then
+            chips = chips * 0.5
+            mult = 1 + (mult - 1) * 0.5
+        end
 
         return {
             vars = {
-                hand and hand.chips or 5,
-                hand and hand.mult or 1,
+                chips,
+                mult,
                 localize(hand_key, "poker_hands"),
                 hand and hand.level or 1,
             },
@@ -65,9 +74,19 @@ SMODS.Edition({
             local _, hand = get_celestial_hand()
 
             if hand then
+                local chips = hand.chips
+                local mult = hand.mult
+                local harlequin_adjusted = CannedLaughter.harlequin_affects_card
+                    and CannedLaughter.harlequin_affects_card(card)
+
+                if harlequin_adjusted then
+                    chips = chips * 0.5
+                    mult = 1 + (mult - 1) * 0.5
+                end
+
                 return {
-                    chips = hand.chips,
-                    mult = hand.mult,
+                    chips = chips,
+                    mult = mult,
                 }
             end
         end

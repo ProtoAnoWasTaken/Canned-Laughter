@@ -1143,13 +1143,18 @@ representative_pool = function(booster_kind)
         stone = 0,
         wild = 0,
     }
+    local harlequin_active = next(SMODS.find_card("j_canlaugh_harlequin") or {}) ~= nil
 
     for _, card in ipairs(G.playing_cards or {}) do
         if not card.canlaugh_barter_rep then
             if is_stone(card) or (type(SMODS.has_no_suit) == "function" and SMODS.has_no_suit(card)) then
                 counts.stone = counts.stone + 1
             elseif is_wild(card) then
-                counts.wild = counts.wild + 1
+                if harlequin_active and card.is_face and card:is_face(true) then
+                    counts.wild = counts.wild + 0.5
+                else
+                    counts.wild = counts.wild + 1
+                end
             else
                 local suit = card.base and card.base.suit
                 if counts[suit] then

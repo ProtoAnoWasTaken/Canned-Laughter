@@ -4,6 +4,8 @@ CannedLaughter = CL
 CL.colour_decks = CL.colour_decks or {}
 local CD = CL.colour_decks
 
+CD.planet_upgrade_state = CD.planet_upgrade_state or {}
+
 function CD.has_deck_sticker(deck_key)
     local profile = G and G.PROFILES and G.SETTINGS and G.PROFILES[G.SETTINGS.profile]
     local usage = profile and profile.deck_usage and profile.deck_usage[deck_key]
@@ -30,47 +32,57 @@ function CD.selected_back_key()
         and selected.effect.center.key
 end
 
+function CD.refresh_planet_upgrade_stats()
+    local hands = G and G.GAME and G.GAME.hands
+
+    if not hands then
+        return
+    end
+
+    local state = CD.planet_upgrade_state
+
+    if state.hands ~= hands then
+        state.hands = hands
+        state.defaults = {}
+    end
+
+    local back_key = CD.selected_back_key()
+    local cobalt_active = back_key == "b_canlaugh_cobalt_deck"
+    local scarlet_active = back_key == "b_canlaugh_scarlet_deck"
+
+    for hand_key, hand in pairs(hands) do
+        local defaults = state.defaults[hand_key]
+
+        if not defaults then
+            defaults = {
+                l_chips = hand.l_chips,
+                l_mult = hand.l_mult,
+            }
+            state.defaults[hand_key] = defaults
+        end
+
+        hand.l_chips = cobalt_active and defaults.l_chips * 1.5 or defaults.l_chips
+        hand.l_mult = scarlet_active and defaults.l_mult * 1.5 or defaults.l_mult
+    end
+end
+
+if Back and type(Back.apply_to_run) == "function" and not CL.colour_deck_apply_hook then
+    CL.colour_deck_apply_hook = true
+    local apply_to_run_ref = Back.apply_to_run
+
+    function Back:apply_to_run(...)
+        local results = { apply_to_run_ref(self, ...) }
+        CD.refresh_planet_upgrade_stats()
+        return unpack(results)
+    end
+end
+
 if Card and type(Card.use_consumeable) == "function" and not CL.colour_deck_planet_hook then
     CL.colour_deck_planet_hook = true
-
     local use_consumeable_ref = Card.use_consumeable
 
     function Card:use_consumeable(area, copier, ...)
-        local center = self.config and self.config.center
-        local hand_key = center
-            and center.set == "Planet"
-            and center.config
-            and center.config.hand_type
-        local hand = hand_key
-            and G.GAME
-            and G.GAME.hands
-            and G.GAME.hands[hand_key]
-        local before_chips = hand and hand.chips
-        local before_mult = hand and hand.mult
-        local back_key = CD.selected_back_key()
-        local results = { use_consumeable_ref(self, area, copier, ...) }
-
-        if hand
-            and before_chips
-            and before_mult
-            and (back_key == "b_canlaugh_scarlet_deck"
-                or back_key == "b_canlaugh_cobalt_deck")
-        then
-            G.E_MANAGER:add_event(Event({
-                trigger = "after",
-                delay = 0.01,
-                func = function()
-                    if back_key == "b_canlaugh_scarlet_deck" then
-                        hand.mult = hand.mult + (hand.mult - before_mult) * 0.5
-                    else
-                        hand.chips = hand.chips + (hand.chips - before_chips) * 0.5
-                    end
-
-                    return true
-                end,
-            }))
-        end
-
-        return unpack(results)
+        CD.refresh_planet_upgrade_stats()
+        return use_consumeable_ref(self, area, copier, ...)
     end
 end
