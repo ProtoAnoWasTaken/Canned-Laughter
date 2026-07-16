@@ -48,6 +48,35 @@ local function mathematician_can_adjust(playing_card)
         and not (playing_card.config and playing_card.config.center and playing_card.config.center.replace_base_card)
 end
 
+local function mathematician_rank_nominal(playing_card)
+    local rank = SMODS and SMODS.Ranks and playing_card.base and SMODS.Ranks[playing_card.base.value]
+
+    return rank and rank.nominal
+end
+
+local function repair_legacy_mathematician_bases()
+    local game = G and G.GAME
+
+    if not game or game.canned_laughter_mathematician_base_repaired then
+        return
+    end
+
+    for _, playing_card in ipairs((G and G.playing_cards) or {}) do
+        local target_nominal = playing_card and MATHEMATICIAN_CHIPS[playing_card:get_id()]
+        local natural_nominal = mathematician_rank_nominal(playing_card)
+
+        if target_nominal
+            and natural_nominal
+            and natural_nominal ~= target_nominal
+            and playing_card.base.nominal == target_nominal
+        then
+            playing_card.base.nominal = natural_nominal
+        end
+    end
+
+    game.canned_laughter_mathematician_base_repaired = true
+end
+
 local function mathematician_natural_perma_bonus(playing_card)
     local harlequin_defaults = CL.harlequin_state
         and CL.harlequin_state.defaults
@@ -74,6 +103,8 @@ function CL.refresh_mathematician_state(ignore_card)
     local state = CL.mathematician_state
     local active = mathematician_is_active(ignore_card)
     local adjusted_cards = {}
+
+    repair_legacy_mathematician_bases()
 
     for _, playing_card in ipairs((G and G.playing_cards) or {}) do
         if mathematician_can_adjust(playing_card) then
