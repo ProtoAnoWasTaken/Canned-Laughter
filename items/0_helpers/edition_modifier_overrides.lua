@@ -436,6 +436,128 @@ function EM.use_wheel_like(card, copier, args)
     delay(0.3)
 end
 
+function EM.use_ectoplasm(card, copier)
+    stop_use()
+
+    if not copier then
+        set_consumeable_usage(card)
+    end
+
+    if card.debuff then
+        return nil
+    end
+
+    local used_card = copier or card
+    local target_pool = EM.refresh_editionless_jokers(card)
+    local glitter_pool = {}
+
+    for _, target in ipairs(target_pool) do
+        if EM.is_glitter_edition(target) then
+            glitter_pool[#glitter_pool + 1] = target
+        end
+    end
+
+    if next(glitter_pool) then
+        target_pool = glitter_pool
+    end
+
+    if not next(target_pool) then
+        return
+    end
+
+    G.E_MANAGER:add_event(Event({
+        trigger = "after",
+        delay = 0.4,
+        func = function()
+            local target = pseudorandom_element(target_pool, pseudoseed("ectoplasm"))
+
+            if not target then
+                return true
+            end
+
+            EM.set_replacement_edition(target, "e_negative")
+
+            if G.P_CENTERS.e_negative then
+                discover_card(G.P_CENTERS.e_negative)
+            end
+
+            check_for_unlock({ type = "have_edition" })
+            G.GAME.ecto_minus = G.GAME.ecto_minus or 1
+            G.hand:change_size(-G.GAME.ecto_minus)
+            G.GAME.ecto_minus = G.GAME.ecto_minus + 1
+            used_card:juice_up(0.3, 0.5)
+            return true
+        end,
+    }))
+
+    delay(0.3)
+end
+
+function EM.use_hex(card, copier)
+    stop_use()
+
+    if not copier then
+        set_consumeable_usage(card)
+    end
+
+    if card.debuff then
+        return nil
+    end
+
+    local used_card = copier or card
+    local target_pool = EM.refresh_editionless_jokers(card)
+    local glitter_pool = {}
+
+    for _, target in ipairs(target_pool) do
+        if EM.is_glitter_edition(target) then
+            glitter_pool[#glitter_pool + 1] = target
+        end
+    end
+
+    if next(glitter_pool) then
+        target_pool = glitter_pool
+    end
+
+    if not next(target_pool) then
+        return
+    end
+
+    G.E_MANAGER:add_event(Event({
+        trigger = "after",
+        delay = 0.4,
+        func = function()
+            local target = pseudorandom_element(target_pool, pseudoseed("hex"))
+
+            if not target then
+                return true
+            end
+
+            EM.set_replacement_edition(target, "e_polychrome")
+
+            if G.P_CENTERS.e_polychrome then
+                discover_card(G.P_CENTERS.e_polychrome)
+            end
+
+            check_for_unlock({ type = "have_edition" })
+
+            local first_dissolve = nil
+
+            for _, joker in pairs(G.jokers.cards) do
+                if joker ~= target and not SMODS.is_eternal(joker, card) then
+                    joker.getting_sliced = true
+                    joker:start_dissolve(nil, first_dissolve)
+                    first_dissolve = true
+                end
+            end
+
+            used_card:juice_up(0.3, 0.5)
+            return true
+        end,
+    }))
+
+    delay(0.3)
+end
+
 local function set_description(set, key, text)
     if G.localization
         and G.localization.descriptions
@@ -577,6 +699,22 @@ if Card and type(Card.use_consumeable) == "function" and not CL.edition_modifier
             and EM.can_use_wheel(self, EM.OVERRIDE_WHEEL_ARGS.edition_args)
         then
             return EM.use_wheel_like(self, copier, EM.OVERRIDE_WHEEL_ARGS)
+        end
+
+        if not EM.disable_overrides()
+            and self.ability
+            and self.ability.name == "Ectoplasm"
+            and next(EM.refresh_editionless_jokers(self))
+        then
+            return EM.use_ectoplasm(self, copier)
+        end
+
+        if not EM.disable_overrides()
+            and self.ability
+            and self.ability.name == "Hex"
+            and next(EM.refresh_editionless_jokers(self))
+        then
+            return EM.use_hex(self, copier)
         end
 
         return use_consumeable_ref(self, area, copier, ...)
