@@ -1629,6 +1629,7 @@ function BT.count_selected_for(trial)
     local count = 0
     local distinct_hands = {}
     local distinct_rarities = {}
+    local distinct_suits = {}
     local spectral_card_counts = {}
     local spectral_editions = {}
     local spectral_cards = 0
@@ -1654,6 +1655,12 @@ function BT.count_selected_for(trial)
                 count = count + 1
             elseif trial.kind == "multi_suit" and rep.kind == "multi_suit" then
                 count = count + 1
+            elseif trial.kind == "multi_suit_or_different_suits" then
+                if rep.kind == "multi_suit" then
+                    count = count + 1
+                elseif rep.kind == "suit" and rep.suit then
+                    distinct_suits[rep.suit] = true
+                end
             elseif trial.kind == "hand_requirement" then
                 if rep.kind == "hand_wild" then
                     count = count + 1
@@ -1718,6 +1725,14 @@ function BT.count_selected_for(trial)
         end
     elseif trial.kind == "joker_rarity_or" then
         if count >= (trial.need_a or 1) or (distinct_rarities[trial.rarity_b] or 0) >= (trial.need_b or 1) then
+            return trial.need
+        end
+    elseif trial.kind == "multi_suit_or_different_suits" then
+        local different_suit_count = 0
+        for _ in pairs(distinct_suits) do
+            different_suit_count = different_suit_count + 1
+        end
+        if count >= (trial.need_a or 1) or different_suit_count >= (trial.need_b or 1) then
             return trial.need
         end
     elseif trial.kind == "spectral_same_card" then
