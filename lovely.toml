@@ -1,0 +1,47 @@
+[manifest]
+version = "1.0.0"
+priority = 7727
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+position = "at"
+pattern = '''
+                eligible_card:set_edition(edition, true)
+'''
+payload = '''
+                if not eligible_card then
+                    local fallback_pool = {}
+                    local glitter_pool = {}
+
+                    for _, joker in ipairs(G.jokers.cards) do
+                        local is_glitter = joker.edition
+                            and (joker.edition.key == "e_canlaugh_glitter" or joker.edition.canlaugh_glitter)
+
+                        if joker.ability.set == "Joker" and (not joker.edition or is_glitter) then
+                            fallback_pool[#fallback_pool + 1] = joker
+
+                            if is_glitter then
+                                glitter_pool[#glitter_pool + 1] = joker
+                            end
+                        end
+                    end
+
+                    if self.ability.name == "Ectoplasm" and #glitter_pool > 0 then
+                        fallback_pool = glitter_pool
+                    end
+
+                    eligible_card = pseudorandom_element(fallback_pool, pseudoseed(
+                        (self.ability.name == "The Wheel of Fortune" and "wheel_of_fortune") or
+                        (self.ability.name == "Ectoplasm" and "ectoplasm") or
+                        (self.ability.name == "Hex" and "hex")
+                    ))
+                end
+
+                if not eligible_card then
+                    return true
+                end
+
+                eligible_card:set_edition(edition, true)
+'''
+match_indent = true
