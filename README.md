@@ -20,7 +20,7 @@ Conceptualization for mod content comes from both existing and unused work in va
 >> It also features an entirely-new **Barter** system, for if you're feeling real greedy for whatever's in the booster pack, with 28 unique trials within to conquer. 
 
 > **Will you add more to the mod?**
->> As it stands? The most I can see myself doing with the current set-up is making more
+>> As it stands? The most I can see myself doing with the current set-up is making more compat updates and bug-fixes. If I get struck with enough inspiration, though, perhaps we'll see more real content.
 
 > **Why isn't the mod loaded?**
 >> You might not have extracted it correctly. If there's a Canned Laughter folder *inside of* the Canned Laughter zip archive, you need to make sure it's only one deep.
