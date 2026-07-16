@@ -1,0 +1,21 @@
+{
+    "id": "CannedLaughter",
+    "name": "Canned Laughter",
+    "author": ["ProtoAno"],
+    "description": "An attempt at Frankensteining new content from existing Balatro mechanics.",
+    "prefix": "canlaugh",
+    "main_file": "main.lua",
+    "priority": 7727,
+    "badge_colour": "E3F0FF",
+    "badge_text_colour": "55A383",
+    "display_name": "Canned Laughter",
+    "dependencies": [
+        "Steamodded (>=1.0.0~BETA-1620a)"
+    ],
+    "version": "0.9-DEMO",
+    "conflicts": [
+    ],
+    "provides": [
+    ],
+    "dump_loc": false
+}
