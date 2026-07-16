@@ -131,8 +131,9 @@ BT.spectral_reps = BT.spectral_reps or {
     { key = "c_grim", kind = "aces", loc = { "Representative of {C:attention}2{} Aces" } },
     { key = "c_familiar", kind = "faces", loc = { "Representative of {C:attention}6{} face cards" } },
     { key = "c_incantation", kind = "numbers", loc = { "Representative of {C:attention}5{} number cards" } },
-    { key = "c_aura", kind = "edition", editions = { foil = true, holo = true }, loc = { "Representative of a {C:dark_edition}Foil{} or {C:dark_edition}Holographic{} card" } },
-    { key = "c_hex", kind = "edition", editions = { polychrome = true }, loc = { "Representative of a {C:dark_edition}Polychrome{} card" } },
+    { key = "c_canlaugh_daguerreotype", kind = "edition", editions = { glitter = true }, loc = { "Representative of {C:attention}4{} {C:canlaugh_glitter}Glitter{} cards" } },
+    { key = "c_aura", kind = "edition", editions = { foil = true, holo = true, plastic = true }, loc = { "Representative of a {C:dark_edition}Foil{}, {C:dark_edition}Holographic{}, or {C:canlaugh_plastic}Plastic{} card" } },
+    { key = "c_hex", kind = "edition", editions = { polychrome = true, celestial = true }, loc = { "Representative of a {C:dark_edition}Polychrome{} or {C:dark_edition}Celestial{} card" } },
     { key = "c_ectoplasm", kind = "edition", editions = { negative = true }, loc = { "Representative of a {C:dark_edition}Negative{} card" } },
 }
 
@@ -143,6 +144,9 @@ local function spectral_card_edition(card)
     if edition.negative or edition.e_negative or edition.key == "e_negative" then return "negative" end
     if edition.foil or edition.e_foil or edition.key == "e_foil" then return "foil" end
     if edition.holo or edition.e_holo or edition.key == "e_holo" then return "holo" end
+    if edition.canlaugh_glitter or edition.key == "e_canlaugh_glitter" then return "glitter" end
+    if edition.canlaugh_plastic or edition.key == "e_canlaugh_plastic" then return "plastic" end
+    if edition.canlaugh_celestial or edition.key == "e_canlaugh_celestial" then return "celestial" end
 end
 
 local function spectral_playing_cards()
@@ -155,7 +159,7 @@ end
 local function spectral_representative_pool()
     local pool = {}
     local aces, faces, numbers = 0, 0, 0
-    local edition_counts = { foil = 0, holo = 0, polychrome = 0, negative = 0 }
+    local edition_counts = { foil = 0, holo = 0, polychrome = 0, negative = 0, glitter = 0, plastic = 0, celestial = 0 }
 
     for _, card in ipairs(G.playing_cards or {}) do
         local id = card.base and card.base.id
@@ -186,17 +190,26 @@ local function spectral_representative_pool()
     add("c_grim", math.floor(aces / 2), BT.spectral_reps[1])
     add("c_familiar", math.floor(faces / 6), BT.spectral_reps[2])
     add("c_incantation", math.floor(numbers / 5), BT.spectral_reps[3])
-    add("c_aura", edition_counts.foil + edition_counts.holo, BT.spectral_reps[4])
-    add("c_hex", edition_counts.polychrome, BT.spectral_reps[5])
-    add("c_ectoplasm", edition_counts.negative, BT.spectral_reps[6])
+    add("c_canlaugh_daguerreotype", math.floor(edition_counts.glitter / 4), BT.spectral_reps[4])
+    add("c_aura", edition_counts.foil + edition_counts.holo + edition_counts.plastic, BT.spectral_reps[5])
+    add("c_hex", edition_counts.polychrome + edition_counts.celestial, BT.spectral_reps[6])
+    add("c_ectoplasm", edition_counts.negative, BT.spectral_reps[7])
 
     local aura_index = 0
+    local hex_index = 0
     for _, rep in ipairs(pool) do
         if rep.key == "c_aura" then
             aura_index = aura_index + 1
-            rep.edition = aura_index <= edition_counts.foil and "foil" or "holo"
+            if aura_index <= edition_counts.foil then
+                rep.edition = "foil"
+            elseif aura_index <= edition_counts.foil + edition_counts.holo then
+                rep.edition = "holo"
+            else
+                rep.edition = "plastic"
+            end
         elseif rep.key == "c_hex" then
-            rep.edition = "polychrome"
+            hex_index = hex_index + 1
+            rep.edition = hex_index <= edition_counts.polychrome and "polychrome" or "celestial"
         elseif rep.key == "c_ectoplasm" then
             rep.edition = "negative"
         end
