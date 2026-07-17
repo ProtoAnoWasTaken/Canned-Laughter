@@ -6,7 +6,7 @@ CL.register_showdown_boss({
     atlas = "showdown_celadon_coin",
     boss_colour = HEX("97E171"),
     mult = 1.5,
-    loc_txt = { name = "Celadon Coin", text = { "Money gained this run adds twice", "to score" } },
+    loc_txt = { name = "Celadon Coin", text = { "Money gained adds twice", "to score" } },
     calculate = function(self, blind, context)
         if context and context.before and type(CL.apply_fortune_score_bonus) == "function" then
             CL.apply_fortune_score_bonus(2)

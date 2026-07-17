@@ -7,7 +7,7 @@ CL.register_standard_boss({
     art = "fortune",
     boss_colour = HEX("EFDF72"),
     mult = 1.5,
-    loc_txt = { name = "The Fortune", text = { "Money gained this run adds to score" } },
+    loc_txt = { name = "The Fortune", text = { "Money gained adds to score" } },
     calculate = function(self, blind, context)
         if context and context.before and type(CL.apply_fortune_score_bonus) == "function" then
             CL.apply_fortune_score_bonus(1)
