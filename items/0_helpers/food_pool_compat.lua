@@ -76,6 +76,22 @@ local function canlaugh_mark_food_center(center)
     return true
 end
 
+local function canlaugh_food_pool_has_center(center)
+    local pool = G and G.P_CENTER_POOLS and G.P_CENTER_POOLS.Food
+
+    if not (pool and center) then
+        return false
+    end
+
+    for _, existing in ipairs(pool) do
+        if existing == center or (existing and existing.key == center.key) then
+            return true
+        end
+    end
+
+    return false
+end
+
 if SMODS and SMODS.ObjectType and not (SMODS.ObjectTypes and SMODS.ObjectTypes.Food) then
     SMODS.ObjectType({
         key = "Food",
@@ -89,7 +105,12 @@ function CL.sync_food_pool_center(center)
     end
 
     local food_type = SMODS and SMODS.ObjectTypes and SMODS.ObjectTypes.Food
-    if food_type and type(food_type.inject_card) == "function" and G and G.P_CENTER_POOLS then
+    if food_type
+        and type(food_type.inject_card) == "function"
+        and G
+        and G.P_CENTER_POOLS
+        and not canlaugh_food_pool_has_center(center)
+    then
         food_type:inject_card(center)
     end
 end

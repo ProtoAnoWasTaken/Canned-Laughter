@@ -17,15 +17,24 @@ CannedLaughter = CL
 
 local function canlaugh_hook_ingens_food_pool()
     local ingens = G and G.P_CENTERS and G.P_CENTERS.j_canlaugh_ingens
-    local food_type = SMODS and SMODS.ObjectTypes and SMODS.ObjectTypes.Food
 
-    if not (ingens and food_type and type(food_type.inject_card) == "function") then
+    if not ingens then
         return
     end
 
     ingens.pools = ingens.pools or {}
     ingens.pools.Food = true
-    food_type:inject_card(ingens)
+
+    if type(CL.sync_food_pool_center) == "function" then
+        CL.sync_food_pool_center(ingens)
+        return
+    end
+
+    local food_type = SMODS and SMODS.ObjectTypes and SMODS.ObjectTypes.Food
+
+    if food_type and type(food_type.inject_card) == "function" then
+        food_type:inject_card(ingens)
+    end
 end
 
 CL.hook_ingens_food_pool = canlaugh_hook_ingens_food_pool
