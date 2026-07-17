@@ -7,7 +7,12 @@ CL.register_standard_boss({
     art = "fortune",
     boss_colour = HEX("EFDF72"),
     mult = 1.5,
-    loc_txt = { name = "The Fortune", text = { "Money gained adds to score" } },
+    loc_txt = { name = "The Fortune", text = { "Money gained this run adds to score" } },
+    calculate = function(self, blind, context)
+        if context and context.before and type(CL.apply_fortune_score_bonus) == "function" then
+            CL.apply_fortune_score_bonus(1)
+        end
+    end,
 })
 
 local function canlaugh_is_positive_money_gain(value)
@@ -49,7 +54,7 @@ if type(ease_dollars) == "function" and not CL.boss_fortune_hook then
             and type(SMODS.mod_score) == "function"
         then
             SMODS.mod_score({
-                add = mod * 1000 * factor,
+                add = mod * 100 * factor,
             })
         end
 

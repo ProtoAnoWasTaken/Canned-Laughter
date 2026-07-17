@@ -229,6 +229,11 @@ end
 local function canlaugh_apply_positive_money_gain(amount)
     CL.apply_bootstrap_paradox_money(amount)
 
+    if G and G.GAME then
+        G.GAME.canlaugh_fortune_money_received =
+            (G.GAME.canlaugh_fortune_money_received or 0) + amount
+    end
+
     if type(CL.apply_chula_reh_money) == "function" then
         local tracked_amount = amount
         local ignored_negative_sale = CL.chula_reh_negative_sale_money_to_ignore or 0
@@ -243,6 +248,20 @@ local function canlaugh_apply_positive_money_gain(amount)
         if tracked_amount > 0 then
             CL.apply_chula_reh_money(tracked_amount)
         end
+    end
+end
+
+function CL.apply_fortune_score_bonus(factor)
+    if not (G and G.GAME and SMODS and type(SMODS.mod_score) == "function") then
+        return
+    end
+
+    local money_received = G.GAME.canlaugh_fortune_money_received or 0
+
+    if money_received > 0 then
+        SMODS.mod_score({
+            add = money_received * 100 * factor,
+        })
     end
 end
 
