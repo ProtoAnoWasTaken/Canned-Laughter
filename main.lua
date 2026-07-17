@@ -170,11 +170,11 @@ if type(loc_colour) == "function" and not CL.edition_colour_hook_installed then
     end
 end
 
-local MOD_ID = "Canned Laughter"
-local FS_PREFIX = "Mods/" .. MOD_ID .. "/"
+local CL_FILESYSTEM = SMODS.NFS or love.filesystem
+local FS_PREFIX = SMODS.current_mod.path
 
 local function cl_parse_named_sort_infos(rel_path, fs_item_path)
-    local contents = love.filesystem.read(fs_item_path)
+    local contents = CL_FILESYSTEM.read(fs_item_path)
     if not contents then
         return {}
     end
@@ -521,18 +521,18 @@ end
 
 local function load_folder(rel_folder)
     local fs_path = FS_PREFIX .. rel_folder
-    if not love.filesystem.getInfo(fs_path) then
+    if not CL_FILESYSTEM.getInfo(fs_path) then
         return
     end
 
-    local items = love.filesystem.getDirectoryItems(fs_path)
+    local items = CL_FILESYSTEM.getDirectoryItems(fs_path)
     table.sort(items, function(a, b)
         local rel_a = rel_folder .. "/" .. a
         local rel_b = rel_folder .. "/" .. b
         local fs_a = FS_PREFIX .. rel_a
         local fs_b = FS_PREFIX .. rel_b
-        local info_a = love.filesystem.getInfo(fs_a)
-        local info_b = love.filesystem.getInfo(fs_b)
+        local info_a = CL_FILESYSTEM.getInfo(fs_a)
+        local info_b = CL_FILESYSTEM.getInfo(fs_b)
 
         if info_a and info_b and info_a.type ~= info_b.type then
             return info_a.type == "directory"
@@ -551,7 +551,7 @@ local function load_folder(rel_folder)
     for _, item in ipairs(items) do
         local rel_path = rel_folder .. "/" .. item
         local fs_item_path = FS_PREFIX .. rel_path
-        local info = love.filesystem.getInfo(fs_item_path)
+        local info = CL_FILESYSTEM.getInfo(fs_item_path)
 
         if info then
             if info.type == "file" and item:lower():match("%.lua$") then
