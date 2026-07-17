@@ -9,7 +9,6 @@ CL.register_standard_boss({
     mult = 2,
     loc_txt = { name = "The Chance", text = { "Cards with random effects", "are debuffed" } },
     recalc_debuff = function(self, card)
-        local key = card and card.config and card.config.center and card.config.center.key
-        return card and card.playing_card and (key == "m_lucky" or key == "m_canlaugh_calcite")
+        return CL.card_has_probability_effect and CL.card_has_probability_effect(card)
     end,
 })

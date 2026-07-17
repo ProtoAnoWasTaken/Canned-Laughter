@@ -9,6 +9,10 @@ local CALCITE_SEAL = "canlaugh_calcite"
 local PHOSPHATE_BACKER = "m_canlaugh_phosphate_backer"
 local CALCITE_BACKER = "m_canlaugh_calcite_backer"
 
+if CL.register_probability_seal then
+    CL.register_probability_seal(CALCITE_SEAL)
+end
+
 local PAIRED_SEAL_TO_BACKER = {
     [PHOSPHATE_SEAL] = PHOSPHATE_BACKER,
     [CALCITE_SEAL] = CALCITE_BACKER,
