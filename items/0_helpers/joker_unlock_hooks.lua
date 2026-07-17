@@ -251,18 +251,69 @@ local function canlaugh_apply_positive_money_gain(amount)
     end
 end
 
-function CL.apply_fortune_score_bonus(factor)
-    if not (G and G.GAME and SMODS and type(SMODS.mod_score) == "function") then
+local function canlaugh_refresh_blind_chip_ui()
+    if not (G and G.FUNCS and G.hand_text_area and G.HUD_blind) then
         return
     end
 
-    local money_received = G.GAME.canlaugh_fortune_money_received or 0
+    local blind_chips = G.hand_text_area.blind_chips
 
-    if money_received > 0 then
-        SMODS.mod_score({
-            add = money_received * 100 * factor,
-        })
+    if not blind_chips then
+        return
     end
+
+    if type(G.FUNCS.blind_chip_UI_scale) == "function" then
+        G.FUNCS.blind_chip_UI_scale(blind_chips)
+    end
+
+    G.HUD_blind:recalculate()
+    blind_chips:juice_up()
+end
+
+local function canlaugh_clear_legacy_score_display()
+    if not (G and G.GAME and G.FUNCS and G.hand_text_area) then
+        return
+    end
+
+    G.SCORE_DISPLAY_QUEUE = nil
+
+    local game_chips = G.hand_text_area.game_chips
+
+    if game_chips and type(G.FUNCS.chip_UI_set) == "function" then
+        G.FUNCS.chip_UI_set(game_chips)
+        game_chips:juice_up()
+    end
+end
+
+function CL.apply_fortune_goal_bonus(key, factor)
+    if not (G and G.GAME and G.GAME.blind) then
+        return
+    end
+
+    canlaugh_clear_legacy_score_display()
+
+    local blind = G.GAME.blind
+    local center = blind.config and blind.config.blind
+
+    if center and (center.key == key or center.key == "bl_canlaugh_" .. key) then
+        blind.canlaugh_fortune_goal_bonuses = nil
+    end
+
+    local bonuses = blind.canlaugh_fortune_goal_bonuses
+
+    if type(bonuses) ~= "table" then
+        bonuses = {}
+        blind.canlaugh_fortune_goal_bonuses = bonuses
+    end
+
+    local previous_bonus = bonuses[key] or 0
+    local money_received = G.GAME.canlaugh_fortune_money_received or 0
+    local new_bonus = money_received * 100 * factor
+
+    bonuses[key] = new_bonus
+    blind.chips = blind.chips - previous_bonus + new_bonus
+    blind.chip_text = number_format(blind.chips)
+    canlaugh_refresh_blind_chip_ui()
 end
 
 local function canlaugh_number_value(value)

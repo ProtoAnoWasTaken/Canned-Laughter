@@ -196,6 +196,7 @@ local function earthsea_set_inherited_blinds(base_mult)
     blind.mult = total_mult
     blind.chips = get_blind_amount(G.GAME.round_resets.ante) * total_mult * G.GAME.starting_params.ante_scaling
     blind.chip_text = number_format(blind.chips)
+    blind.canlaugh_fortune_goal_bonuses = nil
 
     local hands_left = G.GAME.current_round and G.GAME.current_round.hands_left or 0
     local discards_left = G.GAME.current_round and G.GAME.current_round.discards_left or 0

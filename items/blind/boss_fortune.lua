@@ -7,57 +7,10 @@ CL.register_standard_boss({
     art = "fortune",
     boss_colour = HEX("EFDF72"),
     mult = 1.5,
-    loc_txt = { name = "The Fortune", text = { "Money gained adds to score" } },
-    calculate = function(self, blind, context)
-        if context and context.before and type(CL.apply_fortune_score_bonus) == "function" then
-            CL.apply_fortune_score_bonus(1)
+    loc_txt = { name = "The Fortune", text = { "$1 earned this run adds", "100 to the goal" } },
+    set_blind = function()
+        if type(CL.apply_fortune_goal_bonus) == "function" then
+            CL.apply_fortune_goal_bonus("fortune", 1)
         end
     end,
 })
-
-local function canlaugh_is_positive_money_gain(value)
-    if type(value) == "number" then
-        return value > 0
-    end
-
-    if type(compare_numbers) == "function" then
-        local ok, result = pcall(compare_numbers, value, "gt", 0)
-
-        if ok then
-            return result == true
-        end
-    end
-
-    if type(to_number) == "function" then
-        local ok, converted = pcall(to_number, value)
-
-        if ok and type(converted) == "number" then
-            return converted > 0
-        end
-    end
-
-    return false
-end
-
-if type(ease_dollars) == "function" and not CL.boss_fortune_hook then
-    CL.boss_fortune_hook = true
-    local ease_dollars_ref = ease_dollars
-    function ease_dollars(mod, instant, ...)
-        local factor = CL.boss_active("bl_canlaugh_celadon_coin") and 2
-            or CL.boss_active("bl_canlaugh_fortune") and 1
-        local results = { ease_dollars_ref(mod, instant, ...) }
-
-        if factor
-            and mod
-            and canlaugh_is_positive_money_gain(mod)
-            and SMODS.ease_dollars_calc
-            and type(SMODS.mod_score) == "function"
-        then
-            SMODS.mod_score({
-                add = mod * 100 * factor,
-            })
-        end
-
-        return unpack(results)
-    end
-end
