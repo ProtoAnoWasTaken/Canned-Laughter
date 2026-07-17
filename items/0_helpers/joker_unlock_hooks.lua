@@ -246,6 +246,30 @@ local function canlaugh_apply_positive_money_gain(amount)
     end
 end
 
+local function canlaugh_number_value(value)
+    if type(value) == "number" then
+        return value
+    end
+
+    if type(to_number) == "function" then
+        local ok, converted = pcall(to_number, value)
+
+        if ok and type(converted) == "number" then
+            return converted
+        end
+    end
+
+    if type(value) == "table" and type(value.to_number) == "function" then
+        local ok, converted = pcall(value.to_number, value)
+
+        if ok and type(converted) == "number" then
+            return converted
+        end
+    end
+
+    return nil
+end
+
 if Card and type(Card.sell_card) == "function" and not CL.negative_sale_money_hook_installed then
     CL.negative_sale_money_hook_installed = true
     local canlaugh_negative_sale_ref = Card.sell_card
@@ -260,17 +284,18 @@ if type(ease_dollars) == "function" and not CL.bootstrap_paradox_money_hook_inst
     CL.bootstrap_paradox_money_hook_installed = true
     local canlaugh_ease_dollars_ref = ease_dollars
 
-    function ease_dollars(mod, instant)
-        local ret = canlaugh_ease_dollars_ref(mod, instant)
+    function ease_dollars(mod, instant, ...)
+        local ret = canlaugh_ease_dollars_ref(mod, instant, ...)
+        local tracked_mod = canlaugh_number_value(mod)
 
-        if (mod or 0) > 0 then
+        if tracked_mod and tracked_mod > 0 then
             if instant then
-                canlaugh_apply_positive_money_gain(mod)
+                canlaugh_apply_positive_money_gain(tracked_mod)
             else
                 G.E_MANAGER:add_event(Event({
                     trigger = "immediate",
                     func = function()
-                        canlaugh_apply_positive_money_gain(mod)
+                        canlaugh_apply_positive_money_gain(tracked_mod)
                         return true
                     end,
                 }))

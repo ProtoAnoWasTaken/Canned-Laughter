@@ -104,7 +104,8 @@ for index, def in ipairs(tag_defs) do
         loc_txt = { name = "Infuriating Tag", text = current.text },
         in_pool = function() return false end,
         apply = function(self, tag, context)
-            if not (context and context.type == "immediate" and context.canlaugh_tag_click) then return end
+            if not (context and context.type == "immediate") then return end
+            if not context.canlaugh_tag_click then return true end
             CL.collect_infuriating_tag(current.id)
             tag:yep("Collected!", G.C.FILTER, function()
                 remove_collected_tag(tag)
