@@ -11,12 +11,13 @@ local function protected_suit()
         return "Spades"
     end
 
-    if blind.canlaugh_acacia_aegis_suit then
+    local ante = game.round_resets and game.round_resets.ante or 0
+    if blind.canlaugh_acacia_aegis_ante == ante and blind.canlaugh_acacia_aegis_suit then
         return blind.canlaugh_acacia_aegis_suit
     end
 
-    local ante = game.round_resets and game.round_resets.ante or 0
     local suit = CL.boss_random(suits, "canlaugh_acacia_aegis_" .. tostring(ante))
+    blind.canlaugh_acacia_aegis_ante = ante
     blind.canlaugh_acacia_aegis_suit = suit
     return suit
 end
