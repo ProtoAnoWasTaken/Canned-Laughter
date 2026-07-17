@@ -283,6 +283,7 @@ end
 SMODS.Blind({
     key = "earthsea_borealis",
     atlas = "showdown_earthsea_borealis",
+    debuff = {},
     pos = { x = 0, y = 0 },
     boss = { min = 1, max = 1000000, showdown = true },
     canlaugh_boss = true,
@@ -314,8 +315,10 @@ SMODS.Blind({
                 center:disable()
             end
         end)
+        G.GAME.canlaugh_earthsea_inherited_bosses = nil
     end,
     defeat = function(self)
+        earthsea_restore_resource_adjustments()
         each_inherited(function(center)
             if type(center.defeat) == "function" then
                 center:defeat()

@@ -6,22 +6,18 @@ local suits = { "Spades", "Hearts", "Clubs", "Diamonds" }
 local function protected_suit()
     local game = G and G.GAME
     local blind = game and game.blind
-    if not blind then return "Spades" end
-
-    blind.debuff = blind.debuff or {}
-    if blind.debuff.suit then return blind.debuff.suit end
-
-    local ante = game.round_resets and game.round_resets.ante or 0
-    local suit
-
-    if game.canlaugh_acacia_aegis_ante == ante then
-        suit = game.canlaugh_acacia_aegis_suit
+    local center = blind and blind.config and blind.config.blind
+    if not blind or not center or center.key ~= "bl_canlaugh_acacia_aegis" then
+        return "Spades"
     end
 
-    suit = suit or CL.boss_random(suits, "canlaugh_acacia_aegis_" .. tostring(ante))
-    game.canlaugh_acacia_aegis_ante = ante
-    game.canlaugh_acacia_aegis_suit = suit
-    blind.debuff.suit = suit
+    if blind.canlaugh_acacia_aegis_suit then
+        return blind.canlaugh_acacia_aegis_suit
+    end
+
+    local ante = game.round_resets and game.round_resets.ante or 0
+    local suit = CL.boss_random(suits, "canlaugh_acacia_aegis_" .. tostring(ante))
+    blind.canlaugh_acacia_aegis_suit = suit
     return suit
 end
 

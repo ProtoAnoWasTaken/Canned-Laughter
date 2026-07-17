@@ -158,7 +158,7 @@ if Blind and type(Blind.set_blind) == "function" and not CL.challenge_boss_histo
         local result = set_blind_ref(self, blind, reset, silent)
         local center = self.config and self.config.blind
 
-        if center and center.boss and center.key ~= "bl_canlaugh_earthsea_borealis" then
+        if not reset and blind and center and center.boss and center.key ~= "bl_canlaugh_earthsea_borealis" then
             G.GAME.canlaugh_boss_history = G.GAME.canlaugh_boss_history or {}
             local history = G.GAME.canlaugh_boss_history
             history[#history + 1] = center.key

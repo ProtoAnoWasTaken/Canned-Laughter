@@ -2,11 +2,16 @@ local CL = rawget(_G, "CannedLaughter") or {}
 CannedLaughter = CL
 
 function CL.boss_active(key)
-    if not (G and G.GAME and G.GAME.blind and G.GAME.blind.config and G.GAME.blind.config.blind) then
+    local blind = G and G.GAME and G.GAME.blind
+    if not (blind and blind.config and blind.config.blind) then
         return false
     end
 
-    local active_key = G.GAME.blind.config.blind.key
+    if blind.disabled then
+        return false
+    end
+
+    local active_key = blind.config.blind.key
     if active_key == key then
         return true
     end
@@ -89,6 +94,7 @@ if G and G.FUNCS and G.FUNCS.discard_cards_from_highlighted and not CL.exchange_
 end
 
 function CL.register_standard_boss(def)
+    def.debuff = def.debuff or {}
     def.pos = { x = 0, y = 0 }
     def.boss = { min = 1, max = 10 }
     def.canlaugh_boss = true
@@ -97,6 +103,7 @@ function CL.register_standard_boss(def)
 end
 
 function CL.register_showdown_boss(def)
+    def.debuff = def.debuff or {}
     def.pos = { x = 0, y = 0 }
     def.boss = { min = 1, max = 1000000, showdown = true }
     def.canlaugh_boss = true
