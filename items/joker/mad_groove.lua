@@ -40,10 +40,20 @@ end
 local function canlaugh_mad_groove_extra(card, fallback)
     local extra = card and card.ability and card.ability.extra or fallback
     if extra and not extra.scaling_initialized then
-        extra.mult = 0
-        extra.mult_gain = extra.mult_gain or 5
+        extra.chips = 0
+        extra.chips_gain = extra.chips_gain or 5
         extra.shop_count = nil
         extra.scaling_initialized = true
+    end
+    if extra and extra.chips == nil then
+        extra.chips = extra.mult or 0
+    end
+    if extra and extra.chips_gain == nil then
+        extra.chips_gain = extra.mult_gain or 5
+    end
+    if extra then
+        extra.mult = nil
+        extra.mult_gain = nil
     end
     return extra
 end
@@ -56,14 +66,14 @@ SMODS.Joker({
     rarity = 3,
     cost = 8,
     unlocked = false,
-    config = { extra = { mult = 0, mult_gain = 5, scaling_initialized = true } },
+    config = { extra = { chips = 0, chips_gain = 5, scaling_initialized = true } },
     loc_txt = {
         name = "Mad Groove",
         text = {
             "Unpurchased {C:attention}consumables{} and",
             "cards in unpurchased {C:attention}Booster Packs{}",
-            "each add {C:mult}+#1#{} Mult after the Shop",
-            "{C:inactive}(Currently {C:mult}+#2#{C:inactive} Mult){}",
+            "each add {C:chips}+#1#{} Chips after the Shop",
+            "{C:inactive}(Currently {C:chips}+#2#{C:inactive} Chips){}",
         },
         unlock = {
             "Successfully barter with a",
@@ -74,8 +84,8 @@ SMODS.Joker({
         local extra = canlaugh_mad_groove_extra(card, self.config.extra)
         return {
             vars = {
-                extra.mult_gain,
-                extra.mult,
+                extra.chips_gain,
+                extra.chips,
             },
         }
     end,
@@ -88,20 +98,20 @@ SMODS.Joker({
     calculate = function(self, card, context)
         if context.ending_shop and not context.blueprint then
             local extra = canlaugh_mad_groove_extra(card, self.config.extra)
-            local gain = canlaugh_mad_groove_shop_count() * extra.mult_gain
+            local gain = canlaugh_mad_groove_shop_count() * extra.chips_gain
             if gain > 0 then
-                extra.mult = extra.mult + gain
+                extra.chips = extra.chips + gain
                 return {
-                    message = "+" .. tostring(gain) .. " Mult",
-                    colour = G.C.MULT,
+                    message = "+" .. tostring(gain) .. " Chips",
+                    colour = G.C.CHIPS,
                 }
             end
         end
 
         if context.joker_main then
             local extra = canlaugh_mad_groove_extra(card, self.config.extra)
-            if extra.mult > 0 then
-                return { mult = extra.mult }
+            if extra.chips > 0 then
+                return { chips = extra.chips }
             end
         end
     end,

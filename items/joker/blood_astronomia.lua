@@ -17,8 +17,8 @@ local function canlaugh_blood_astronomia_update(delta_chips, delta_mult)
         local center = joker.config and joker.config.center
         if center and center.key == "j_canlaugh_blood_astronomia" and joker.ability then
             joker.ability.extra = joker.ability.extra or { chips = 0, mult = 0 }
-            joker.ability.extra.chips = (joker.ability.extra.chips or 0) + (delta_chips or 0) * 0.25
-            joker.ability.extra.mult = (joker.ability.extra.mult or 0) + (delta_mult or 0) * 0.25
+            joker.ability.extra.chips = (joker.ability.extra.chips or 0) + (delta_chips or 0) * 0.5
+            joker.ability.extra.mult = (joker.ability.extra.mult or 0) + (delta_mult or 0) * 0.5
         end
     end
 end
@@ -58,7 +58,7 @@ SMODS.Joker({
     loc_txt = {
         name = "Blood Astronomia",
         text = {
-            "Gains an additional {C:attention}25%{} of the",
+            "Gains an additional {C:attention}50%{} of the",
             "Chips and Mult from every {C:planet}Planet{} Card used",
             "{C:inactive}(Currently {C:chips}+#1#{C:inactive} Chips and {C:mult}+#2#{C:inactive} Mult){}",
         },

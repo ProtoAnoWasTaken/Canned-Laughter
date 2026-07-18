@@ -12,7 +12,7 @@ local function earthsea_defeated()
     local profile = G and G.PROFILES and G.SETTINGS and G.PROFILES[G.SETTINGS.profile]
     local earned = G and G.SETTINGS and G.SETTINGS.ACHIEVEMENTS_EARNED
 
-    return profile and profile.canlaugh_earthsea_borealis_defeated
+    return profile and (profile.canlaugh_earthsea_borealis_defeated or profile.all_unlocked)
         or earned and earned.canlaugh_still_the_best_2026
 end
 

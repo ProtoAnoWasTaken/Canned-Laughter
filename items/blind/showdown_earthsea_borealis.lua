@@ -62,9 +62,11 @@ local earthsea_blind_key = "bl_canlaugh_earthsea_borealis"
 local function earthsea_achievement_earned()
     local achievement = G and G.ACHIEVEMENTS and G.ACHIEVEMENTS[earthsea_achievement_key]
     local earned = G and G.SETTINGS and G.SETTINGS.ACHIEVEMENTS_EARNED
+    local profile = earthsea_profile()
 
     return achievement and achievement.earned
         or earned and earned[earthsea_achievement_key]
+        or profile and profile.all_unlocked
 end
 
 function CL.refresh_earthsea_borealis_unlock()
