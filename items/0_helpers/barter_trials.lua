@@ -267,7 +267,7 @@ local rep_centers = {
         }
     },
     wild = 
-    { key = "c_lovers", kind = "multi_suit", loc = 
+    { key = "c_lovers", kind = "multi_suit", any_suit = true, loc =
         {
             "Representative of",
             "{C:attention}1{} card with",
@@ -1665,7 +1665,9 @@ function BT.count_selected_for(trial)
                 or rep.any_trial
             then
                 count = count + 1
-            elseif trial.kind == "suit" and rep.kind == "suit" and smeared_suits_match(rep.suit, trial.suit) then
+            elseif trial.kind == "suit" and (rep.any_suit
+                or (rep.kind == "suit" and smeared_suits_match(rep.suit, trial.suit)))
+            then
                 count = count + 1
             elseif trial.kind == "face" and rep.kind == "face" then
                 count = count + 1
