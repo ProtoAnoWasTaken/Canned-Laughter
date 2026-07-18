@@ -56,12 +56,41 @@ local function earthsea_profile()
     return G and G.PROFILES and G.SETTINGS and G.PROFILES[G.SETTINGS.profile]
 end
 
-local function earthsea_unlocked()
-    local profile = earthsea_profile()
+local earthsea_achievement_key = "ach_canlaugh_still_the_best_2026"
+local earthsea_blind_key = "bl_canlaugh_earthsea_borealis"
+
+local function earthsea_achievement_earned()
+    local achievement = G and G.ACHIEVEMENTS and G.ACHIEVEMENTS[earthsea_achievement_key]
     local earned = G and G.SETTINGS and G.SETTINGS.ACHIEVEMENTS_EARNED
 
-    return profile and profile.canlaugh_earthsea_borealis_defeated
-        or earned and earned.canlaugh_still_the_best_2026
+    return achievement and achievement.earned
+        or earned and earned[earthsea_achievement_key]
+end
+
+function CL.refresh_earthsea_borealis_unlock()
+    if not earthsea_achievement_earned() then
+        return false
+    end
+
+    local blind = G and G.P_BLINDS and G.P_BLINDS[earthsea_blind_key]
+    if not blind then
+        return true
+    end
+
+    if not blind.discovered then
+        blind.discovered = true
+        blind.alerted = false
+
+        if G and type(G.save_progress) == "function" then
+            G:save_progress()
+        end
+    end
+
+    return true
+end
+
+local function earthsea_unlocked()
+    return CL.refresh_earthsea_borealis_unlock()
 end
 
 local function inherited_blinds()
@@ -270,6 +299,7 @@ local function grant_author_avatar()
     if type(check_for_unlock) == "function" then
         check_for_unlock({ type = "canlaugh_earthsea_borealis_defeated" })
     end
+    CL.refresh_earthsea_borealis_unlock()
     if SMODS and type(SMODS.add_card) == "function" then
         SMODS.add_card({
             key = "j_canlaugh_author_avatar",

@@ -495,6 +495,10 @@ local function cl_recheck_unlocks()
         fire_unlock({ type = "canlaugh_earthsea_borealis_defeated" })
     end
 
+    if type(CL.refresh_earthsea_borealis_unlock) == "function" then
+        CL.refresh_earthsea_borealis_unlock()
+    end
+
     for _, deck_key in ipairs({ "b_red", "b_blue", "b_yellow", "b_green" }) do
         local usage = profile and profile.deck_usage and profile.deck_usage[deck_key]
         if usage and (next(usage.wins_by_key or {}) or next(usage.wins or {})) then
