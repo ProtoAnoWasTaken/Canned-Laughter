@@ -21,8 +21,8 @@ SMODS.Tarot({
         name = "The Ivy Gardener",
         text = {
             "Increases the rank of",
-            "{C:attention}1{} selected card",
-            "by {C:attention}2{}",
+            "{C:attention}1{} selected card by {C:attention}2{}",
+            "{}",
         },
     },
     can_use = function(self, card)

@@ -3,8 +3,8 @@ SMODS.Achievement({
     loc_txt = {
         name = "Ransacked",
         description = {
-            "Successfully barter for everything",
-            "you can in a Shop",
+            "Successfully barter for",
+            "everything you can in a Shop",
         },
     },
     unlock_condition = function(self, args)

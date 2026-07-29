@@ -50,7 +50,7 @@ CL.register_standard_boss({
     atlas = "boss_lake",
     boss_colour = HEX("4395D5"),
     mult = 2,
-    loc_txt = { name = "The Lake", text = { "Scored ranks are turned", "face down" } },
+    loc_txt = { name = "The Lake", text = { "Scored ranks are", "turned face down" } },
     calculate = function(self, blind, context)
         if not (context and context.after and context.scoring_hand) then return end
 

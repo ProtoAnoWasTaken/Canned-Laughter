@@ -9,8 +9,8 @@ CL.register_showdown_boss({
     loc_txt = {
         name = "Tyrian Baton",
         text = {
-            "Playing or discarding uses every card",
-            "All cards score",
+            "Playing or discarding",
+            "uses every card\nAll cards score",
         },
     },
 })

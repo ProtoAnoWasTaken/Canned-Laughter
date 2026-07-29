@@ -7,7 +7,7 @@ CL.register_standard_boss({
     art = "need",
     boss_colour = HEX("4F2D38"),
     mult = 2,
-    loc_txt = { name = "The Need", text = { "Hands must contain your", "full hand size" } },
+    loc_txt = { name = "The Need", text = { "Hands must contain", "your full hand size" } },
     set_blind = function(self)
         local extra = math.max(0, CL.boss_hand_size() - 5) * .25
         G.GAME.blind.chips = G.GAME.blind.chips * (1 + extra)
