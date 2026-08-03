@@ -5,6 +5,7 @@ CL.joker_seal_effects = CL.joker_seal_effects or {}
 CL.joker_seal_blocklist = CL.joker_seal_blocklist or {
     canlaugh_calcite = true,
     canlaugh_phosphate = true,
+    canlaugh_magnesium = true,
     starlight = true,
 }
 
@@ -213,7 +214,7 @@ local function canlaugh_joker_scored(result)
     return false
 end
 
-local function canlaugh_is_real_joker_proc(card, context, result)
+local function canlaugh_is_real_joker_proc(card, context, result, post)
     if not context
         or context.retrigger_joker_check
         or context.post_trigger
@@ -226,7 +227,7 @@ local function canlaugh_is_real_joker_proc(card, context, result)
         return false
     end
 
-    return canlaugh_joker_scored(result)
+    return post or canlaugh_joker_scored(result)
 end
 
 local function canlaugh_is_last_hand_of_round()
@@ -331,9 +332,7 @@ CL.register_joker_seal_effect("Gold", {
 CL.register_joker_seal_effect("Blue", {
     loc = JOKER_SEAL_LOC_TXT.Blue,
     after_score = function(card)
-        if canlaugh_is_last_hand_of_round() then
-            canlaugh_create_planet_for_last_hand(card)
-        end
+        canlaugh_create_planet_for_last_hand(card)
     end,
 })
 
@@ -445,7 +444,7 @@ end
 
 canlaugh_unwrap_old_red_seal_repetition_hook()
 
-local JOKER_SEAL_CALCULATE_HOOK_VERSION = 6
+local JOKER_SEAL_CALCULATE_HOOK_VERSION = 7
 
 if Card
     and type(Card.calculate_joker) == "function"
@@ -492,6 +491,7 @@ then
         end
 
         return canlaugh_joker_returned_effect(result, post)
+            or (context.open_booster and card.ability and card.ability.name == "Hallucination")
     end
 
     local function canlaugh_shadow_seal_can_retry(card, context, result, post)
@@ -604,12 +604,12 @@ then
         if effect
             and type(effect.after_score) == "function"
         then
-            local procced = canlaugh_is_real_joker_proc(self, context, result)
+            local procced = canlaugh_is_real_joker_proc(self, context, result, post)
             if procced then
                 self.canlaugh_joker_seal_last_proc_context = context
                 effect.after_score(self, context, result, post)
             end
-        elseif canlaugh_is_real_joker_proc(self, context, result) then
+        elseif canlaugh_is_real_joker_proc(self, context, result, post) then
             self.canlaugh_joker_seal_last_proc_context = context
         end
 

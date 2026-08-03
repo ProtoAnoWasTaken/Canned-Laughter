@@ -93,13 +93,26 @@ local function canlaugh_create_modified_replacement(source_card)
     end
 
     local front = source_card.config and source_card.config.card
-    local new_card = create_playing_card({
+    local previous_suppression = CL.suppress_playing_card_acquired_unlock
+    CL.suppress_playing_card_acquired_unlock = true
+
+    local success, new_card = pcall(create_playing_card, {
         front = front,
         center = G.P_CENTERS and G.P_CENTERS.c_base,
     }, G.deck, nil, nil, nil)
 
+    CL.suppress_playing_card_acquired_unlock = previous_suppression
+
+    if not success then
+        error(new_card)
+    end
+
     if not new_card then
         return
+    end
+
+    if CL.unlocks and type(CL.unlocks.increment_playing_cards_acquired) == "function" then
+        CL.unlocks.increment_playing_cards_acquired(1)
     end
 
     local seed_suffix = table.concat({

@@ -24,6 +24,7 @@ if Card and type(Card.set_edition) == "function" and not CL.plastic_blueprint_co
             and center
             and center.set == "Joker"
             and center.blueprint_compat ~= true
+            and not (CL.challenge_active and CL.challenge_active("jens_mod"))
         then
             return
         end

@@ -1,8 +1,10 @@
 G.C.CANNED_LAUGHTER = HEX("D45A73")
 G.C.CANLAUGH_GLITTER = HEX("FF87F7")
 G.C.CANLAUGH_PLASTIC = HEX("84AFB8")
+G.C.CANLAUGH_FROZEN = HEX("BAF7F1")
 G.C.CANLAUGH_PHOSPHATE = HEX("EB0000")
 G.C.CANLAUGH_CALCITE = HEX("FEC35C")
+G.C.CANLAUGH_MAGNESIUM = HEX("C4D0E3")
 
 SMODS.current_mod.optional_features = {
     object_weights = true,
@@ -18,8 +20,9 @@ CannedLaughter = rawget(_G, "CannedLaughter") or {}
 
 local CL = CannedLaughter
 
+CL.mod = SMODS.current_mod
 CL.config = CL_CONFIG
-CL.mod_path = SMODS.current_mod.path
+CL.mod_path = CL.mod.path
 CL.item_sort_info_cache = CL.item_sort_info_cache or {}
 
 local function cl_tooltip_identity(tooltip)
@@ -156,6 +159,9 @@ if type(loc_colour) == "function" and not CL.edition_colour_hook_installed then
         if colour_key == "canlaugh_plastic" then
             return G.C.CANLAUGH_PLASTIC or default
         end
+        if colour_key == "canlaugh_frozen" then
+            return G.C.CANLAUGH_FROZEN or default
+        end
         if colour_key == "canlaugh_shadow" then
             return G.C.CANLAUGH_SHADOW or default
         end
@@ -164,6 +170,9 @@ if type(loc_colour) == "function" and not CL.edition_colour_hook_installed then
         end
         if colour_key == "canlaugh_calcite" then
             return G.C.CANLAUGH_CALCITE or default
+        end
+        if colour_key == "canlaugh_magnesium" then
+            return G.C.CANLAUGH_MAGNESIUM or default
         end
 
         return cl_loc_colour_ref(colour_key, default)
@@ -297,6 +306,36 @@ local function cl_is_showdown_blind(center)
     return center and (center.canlaugh_showdown or (center.boss and center.boss.showdown))
 end
 
+local function cl_get_blind_collection_tier(center)
+    if center and center.canlaugh_collection_tier then
+        return center.canlaugh_collection_tier
+    end
+
+    if center and center.canlaugh_superboss then
+        return 5
+    end
+
+    if cl_is_showdown_blind(center) then
+        return 4
+    end
+
+    if center and (center.canlaugh_boss or center.boss) then
+        return 3
+    end
+
+    return 0
+end
+
+local function cl_is_collection_blind(center)
+    return center and (
+        center.canlaugh_collection_tier
+        or center.small
+        or center.big
+        or center.canlaugh_boss
+        or center.boss
+    )
+end
+
 local function cl_compare_collection_entries(a, b)
     if a.mod ~= b.mod then
         if not a.mod then
@@ -319,10 +358,18 @@ local function cl_compare_collection_entries(a, b)
         end
     end
 
-    if (a.center.canlaugh_boss and b.center.canlaugh_boss) or (a.mod and b.mod and tostring(a.mod.id or a.mod) == tostring(b.mod.id or b.mod) and (a.center.boss or a.center.canlaugh_showdown) and (b.center.boss or b.center.canlaugh_showdown)) then
-        local showdown_a = cl_is_showdown_blind(a.center)
-        local showdown_b = cl_is_showdown_blind(b.center)
-        if showdown_a ~= showdown_b then return not showdown_a end
+    local same_mod = a.mod
+        and b.mod
+        and tostring(a.mod.id or a.mod) == tostring(b.mod.id or b.mod)
+    local canlaugh_blinds = (a.center.canlaugh_boss or a.center.canlaugh_big_blind)
+        and (b.center.canlaugh_boss or b.center.canlaugh_big_blind)
+
+    if canlaugh_blinds or (same_mod and cl_is_collection_blind(a.center) and cl_is_collection_blind(b.center)) then
+        local tier_a = cl_get_blind_collection_tier(a.center)
+        local tier_b = cl_get_blind_collection_tier(b.center)
+        if tier_a ~= tier_b then
+            return tier_a < tier_b
+        end
     end
 
     if a.mod and b.mod then
@@ -495,11 +542,19 @@ local function cl_recheck_unlocks()
         fire_unlock({ type = "canlaugh_earthsea_borealis_defeated" })
     end
 
+    if profile and profile.canlaugh_spilled_vessel_defeated then
+        fire_unlock({ type = "canlaugh_spilled_vessel_defeated" })
+    end
+
+    if G and G.P_CENTERS and G.P_CENTERS.c_soul and G.P_CENTERS.c_soul.discovered then
+        fire_unlock({ type = "canlaugh_stanczyk_soul_discovered" })
+    end
+
     if type(CL.refresh_earthsea_borealis_unlock) == "function" then
         CL.refresh_earthsea_borealis_unlock()
     end
 
-    for _, deck_key in ipairs({ "b_red", "b_blue", "b_yellow", "b_green" }) do
+    for _, deck_key in ipairs({ "b_red", "b_blue", "b_yellow", "b_green", "b_anaglyph", "b_abandoned" }) do
         local usage = profile and profile.deck_usage and profile.deck_usage[deck_key]
         if usage and (next(usage.wins_by_key or {}) or next(usage.wins or {})) then
             pcall(check_for_unlock, { type = "win_deck", deck = deck_key })
@@ -520,6 +575,26 @@ local function cl_install_unlock_recheck_hook()
         local results = { cl_save_unlocks_ref(...) }
         cl_recheck_unlocks()
         return unpack(results)
+    end
+end
+
+local function cl_reset_legacy_boss_discoveries()
+    local profile = G and G.PROFILES and G.SETTINGS and G.PROFILES[G.SETTINGS.profile]
+    if not profile or profile.canlaugh_boss_discovery_reset then
+        return
+    end
+
+    for _, blind in pairs(G.P_BLINDS or {}) do
+        if blind.canlaugh_boss and not blind.canlaugh_superboss then
+            blind.discovered = false
+            blind.alerted = false
+        end
+    end
+
+    profile.canlaugh_boss_discovery_reset = true
+
+    if type(G.save_progress) == "function" then
+        G:save_progress()
     end
 end
 
@@ -586,6 +661,7 @@ if type(set_main_menu_UI) == "function" and not CL.main_menu_unlock_recheck_hook
 
     function set_main_menu_UI(...)
         local results = { cl_set_main_menu_ui_ref(...) }
+        cl_reset_legacy_boss_discoveries()
         cl_recheck_unlocks()
         return unpack(results)
     end
@@ -608,6 +684,19 @@ if type(create_UIBox_your_collection_blinds) == "function" and not CL.blind_coll
     function create_UIBox_your_collection_blinds(...)
         cl_normalize_collection_order()
         return cl_create_blind_collection_ref(...)
+    end
+end
+
+if SMODS and type(SMODS.card_collection_UIBox) == "function" and not CL.mod_blind_collection_order_hook_installed then
+    CL.mod_blind_collection_order_hook_installed = true
+    local cl_card_collection_UIBox_ref = SMODS.card_collection_UIBox
+
+    function SMODS.card_collection_UIBox(pool, ...)
+        if G and pool == G.P_BLINDS then
+            cl_normalize_collection_order()
+        end
+
+        return cl_card_collection_UIBox_ref(pool, ...)
     end
 end
 

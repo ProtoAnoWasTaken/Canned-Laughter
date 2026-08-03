@@ -33,6 +33,18 @@ if type(ease_ante) == "function" and not CL.boss_journey_hook then
             G.GAME.canlaugh_journey_ante_bonus = nil
             ease_ante(extra)
             ease_dollars(extra * 25)
+            G.E_MANAGER:add_event(Event({
+                trigger = "immediate",
+                func = function()
+                    if G.GAME.round_resets
+                        and G.GAME.round_resets.ante == 8
+                        and type(check_for_unlock) == "function"
+                    then
+                        check_for_unlock({ type = "canlaugh_power_armor" })
+                    end
+                    return true
+                end,
+            }))
         end
         return unpack(results)
     end

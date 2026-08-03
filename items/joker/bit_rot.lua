@@ -30,7 +30,11 @@ SMODS.DrawStep({
     func = function(card)
         local center = card and card.config and card.config.center
         if center
-            and center.key == "j_canlaugh_bit_rot"
+            and (
+                center.key == "j_canlaugh_bit_rot"
+                or center.key == "j_canlaugh_channel_capture"
+                or center.key == "j_canlaugh_dionysus"
+            )
             and card.children
             and card.children.center
         then

@@ -34,7 +34,17 @@ SMODS.Joker({
     eternal_compat = true,
     perishable_compat = true,
     calculate = function(self, card, context)
-        if context.setting_blind and not context.blueprint then
+        if context.setting_blind and not context.blueprint and not context.canlaugh_spyware then
+            if CannedLaughter.businessman_consume_whitecollar
+                and CannedLaughter.businessman_consume_whitecollar()
+            then
+                SMODS.destroy_cards(card, nil, nil, true)
+                return {
+                    message = "Fired!",
+                    colour = G.C.RED,
+                }
+            end
+
             local PCJ = CannedLaughter.playing_card_jokers
             local JPE = CannedLaughter.joker_plastic_edition
             local target = PCJ.random_lucky_card()

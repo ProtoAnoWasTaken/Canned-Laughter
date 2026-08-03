@@ -43,7 +43,8 @@ SMODS.Back({
             "for each {C:attention}Ante{}",
         },
         unlock = {
-            "Complete the {C:attention}Darkanist{} achievement",
+            "Complete the {C:attention}Darkanist{}",
+            "achievement",
         },
     },
     check_for_unlock = function(self, args)

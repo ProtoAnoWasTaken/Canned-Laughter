@@ -738,6 +738,22 @@ if Card and type(Card.use_consumeable) == "function" and not CL.edition_modifier
     end
 end
 
+G.FUNCS.canlaugh_final_boss_theme_changed = function(args)
+    local cycle_config = args and args.cycle_config
+    local ref_table = cycle_config and cycle_config.ref_table
+    local ref_value = cycle_config and cycle_config.ref_value
+
+    if ref_table and ref_value and args.to_val then
+        ref_table[ref_value] = args.to_val
+    end
+end
+
+G.FUNCS.canlaugh_arachnophobia_changed = function()
+    if CL.refresh_widow_sprites then
+        CL.refresh_widow_sprites()
+    end
+end
+
 SMODS.current_mod.config_tab = function()
     return {
         n = G.UIT.ROOT,
@@ -752,9 +768,38 @@ SMODS.current_mod.config_tab = function()
                         config = { align = "cm", padding = 0.02 },
                         nodes = {
                             create_toggle({
-                                label = "Disable edition-modifier overrides",
+                                label = "Disable vanilla changes",
                                 ref_table = CL.config,
                                 ref_value = "disable_edition_modifier_overrides",
+                            }),
+                        },
+                    },
+                    {
+                        n = G.UIT.R,
+                        config = { align = "cm", padding = 0.02 },
+                        nodes = {
+                            create_toggle({
+                                label = "Arachnophobia",
+                                ref_table = CL.config,
+                                ref_value = "arachnophobia",
+                                callback = G.FUNCS.canlaugh_arachnophobia_changed,
+                            }),
+                        },
+                    },
+                    {
+                        n = G.UIT.R,
+                        config = { align = "cm", padding = 0.02 },
+                        nodes = {
+                            create_option_cycle({
+                                label = "I like my final boss...",
+                                options = { "Clean", "Dirty" },
+                                current_option = CL.config.final_boss_theme == "Dirty" and 2 or 1,
+                                ref_table = CL.config,
+                                ref_value = "final_boss_theme",
+                                opt_callback = "canlaugh_final_boss_theme_changed",
+                                colour = G.C.CANNED_LAUGHTER,
+                                no_pips = true,
+                                w = 4.4,
                             }),
                         },
                     },

@@ -75,6 +75,7 @@ if not CL.negative_space_hook_installed then
     G.FUNCS.get_poker_hand_info = function(_cards)
         local text, loc_disp_text, poker_hands, scoring_hand, disp_text =
             canlaugh_get_poker_hand_info_ref(_cards)
+        local original_text = text
 
         canlaugh_apply_negative_space(poker_hands)
 
@@ -89,7 +90,9 @@ if not CL.negative_space_hook_installed then
             scoring_hand = poker_hands["Five of a Kind"][1]
         end
 
-        if text == "Flush Five" or text == "Flush House" or text == "Five of a Kind" then
+        if text ~= original_text
+            and (text == "Flush Five" or text == "Flush House" or text == "Five of a Kind")
+        then
             disp_text = text
             loc_disp_text = localize(disp_text, "poker_hands")
         end

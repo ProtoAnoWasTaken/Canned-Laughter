@@ -59,7 +59,7 @@ SMODS.Joker({
     name = "Egg Man",
     atlas = "egg_man",
     pos = { x = 0, y = 0 },
-    rarity = 3,
+    rarity = 2,
     cost = 8,
     unlocked = false,
     config = {

@@ -3,19 +3,30 @@ CannedLaughter = CL
 
 G.C.CANLAUGH_PHOSPHATE = G.C.CANLAUGH_PHOSPHATE or HEX("EB0000")
 G.C.CANLAUGH_CALCITE = G.C.CANLAUGH_CALCITE or HEX("FEC35C")
+G.C.CANLAUGH_MAGNESIUM = G.C.CANLAUGH_MAGNESIUM or HEX("C4D0E3")
 
 local PHOSPHATE_SEAL = "canlaugh_phosphate"
 local CALCITE_SEAL = "canlaugh_calcite"
+local MAGNESIUM_SEAL = "canlaugh_magnesium"
 local PHOSPHATE_BACKER = "m_canlaugh_phosphate_backer"
 local CALCITE_BACKER = "m_canlaugh_calcite_backer"
+local MAGNESIUM_BACKER = "m_canlaugh_magnesium_backer"
 
 if CL.register_probability_seal then
     CL.register_probability_seal(CALCITE_SEAL)
+    CL.register_probability_seal(MAGNESIUM_SEAL)
 end
 
 local PAIRED_SEAL_TO_BACKER = {
     [PHOSPHATE_SEAL] = PHOSPHATE_BACKER,
     [CALCITE_SEAL] = CALCITE_BACKER,
+    [MAGNESIUM_SEAL] = MAGNESIUM_BACKER,
+}
+
+local PROTECTED_SEALS = {
+    [PHOSPHATE_SEAL] = true,
+    [CALCITE_SEAL] = true,
+    [MAGNESIUM_SEAL] = true,
 }
 
 local function canlaugh_center_key(card)
@@ -38,8 +49,12 @@ local function canlaugh_has_paired_seal(card)
     return card and PAIRED_SEAL_TO_BACKER[card.seal] ~= nil
 end
 
-local function canlaugh_can_receive_paired_seal(card, seal)
-    if not card or not PAIRED_SEAL_TO_BACKER[seal] then
+local function canlaugh_has_protected_seal(card)
+    return card and PROTECTED_SEALS[card.seal] ~= nil
+end
+
+local function canlaugh_can_receive_protected_seal(card, seal)
+    if not card or not PROTECTED_SEALS[seal] then
         return false
     end
 
@@ -75,6 +90,62 @@ local function canlaugh_apply_phosphate_xmult(card)
         message_card = card,
         colour = G.C.MULT,
     }, card)
+end
+
+local function canlaugh_break_magnesium(card)
+    if not card or card.canlaugh_magnesium_breaking then
+        return
+    end
+
+    card.canlaugh_magnesium_breaking = true
+
+    local function break_card()
+        if card and not card.removed and type(card.start_dissolve) == "function" then
+            card.getting_sliced = true
+            card.destroyed = true
+            card:start_dissolve({ G.C.CANLAUGH_MAGNESIUM }, true, 1.6)
+            play_sound("slice1", 0.96 + math.random() * 0.08)
+        end
+
+        return true
+    end
+
+    if G and G.E_MANAGER then
+        G.E_MANAGER:add_event(Event({
+            trigger = "after",
+            delay = 0.4,
+            func = break_card,
+        }))
+        return
+    end
+
+    break_card()
+end
+
+local function canlaugh_queue_magnesium_break(card)
+    if not card or card.canlaugh_magnesium_break_queued then
+        return
+    end
+
+    card.canlaugh_magnesium_break_queued = true
+    CL.magnesium_break_cards = CL.magnesium_break_cards or {}
+    CL.magnesium_break_cards[#CL.magnesium_break_cards + 1] = card
+end
+
+local function canlaugh_resolve_magnesium_breaks()
+    local cards = CL.magnesium_break_cards
+    CL.magnesium_break_cards = nil
+
+    if not cards then
+        return
+    end
+
+    for _, card in ipairs(cards) do
+        if card then
+            card.canlaugh_magnesium_break_queued = nil
+            canlaugh_break_magnesium(card)
+        end
+    end
 end
 
 local function canlaugh_force_phosphate_cards_front(cards)
@@ -416,13 +487,13 @@ if not CL.phosphate_calcite_card_hooks_installed then
 
     function Card:set_seal(_seal, silent, immediate, ...)
         if not CL.paired_seal_internal_change then
-            if canlaugh_has_paired_seal(self) and _seal ~= self.seal then
+            if canlaugh_has_protected_seal(self) and _seal ~= self.seal then
                 return
             end
 
-            if PAIRED_SEAL_TO_BACKER[_seal]
+            if PROTECTED_SEALS[_seal]
                 and not CL.paired_seal_grafting
-                and not canlaugh_can_receive_paired_seal(self, _seal)
+                and not canlaugh_can_receive_protected_seal(self, _seal)
             then
                 return
             end
@@ -444,7 +515,11 @@ if not CL.phosphate_calcite_card_hooks_installed then
     local cl_set_ability_ref = Card.set_ability
 
     function Card:set_ability(center, initial, delay_sprites, ...)
-        if canlaugh_has_paired_seal(self) and not CL.paired_seal_internal_change then
+        if canlaugh_has_protected_seal(self) and not CL.paired_seal_internal_change then
+            if self.seal == MAGNESIUM_SEAL then
+                return
+            end
+
             local target_key = type(center) == "string" and center or center and center.key
 
             if target_key and target_key ~= "c_base" then
@@ -535,6 +610,10 @@ if SMODS and type(SMODS.calculate_context) == "function" and not CL.phosphate_ca
 
         if context and context.setting_blind then
             canlaugh_reset_phosphate_returns()
+        end
+
+        if context and context.final_scoring_step then
+            canlaugh_resolve_magnesium_breaks()
         end
 
         return unpack(results)
@@ -657,6 +736,20 @@ SMODS.Atlas({
 })
 
 SMODS.Atlas({
+    key = "magnesium_seal",
+    path = "magnesium_seal.png",
+    px = 69,
+    py = 93,
+})
+
+SMODS.Atlas({
+    key = "magnesium_enhancement",
+    path = "magnesium_enhancement.png",
+    px = 69,
+    py = 93,
+})
+
+SMODS.Atlas({
     key = "calcite_enhancement",
     path = "calcite_enhancement.png",
     px = 69,
@@ -718,6 +811,65 @@ SMODS.Seal({
     },
     calculate = function(self, card, context)
         canlaugh_clear_real_paired_backer(card)
+    end,
+})
+
+SMODS.Enhancement({
+    key = "magnesium_backer",
+    atlas = "magnesium_enhancement",
+    pos = { x = 0, y = 0 },
+    discovered = true,
+    no_collection = true,
+    no_doe = true,
+    loc_txt = {
+        name = "Magnesium Backer",
+        text = {},
+    },
+    in_pool = function()
+        return false
+    end,
+})
+
+SMODS.Seal({
+    key = "magnesium",
+    atlas = "magnesium_seal",
+    pos = { x = 0, y = 0 },
+    badge_colour = G.C.CANLAUGH_MAGNESIUM,
+    discovered = true,
+    in_pool = function()
+        return false
+    end,
+    loc_txt = {
+        label = "Magnesium Seal",
+        name = "Magnesium Seal",
+        text = {
+            "{X:mult,C:white}X4{} Mult when scored",
+            "{C:green}#1# in #2#{} chance to break",
+            "{C:inactive}This card cannot be{}",
+            "{C:inactive}sealed or enhanced{}",
+        },
+    },
+    loc_vars = function(self, info_queue, card)
+        local numerator, denominator = SMODS.get_probability_vars(card, 1, 2, "canlaugh_magnesium_break")
+        return {
+            vars = { numerator, denominator },
+        }
+    end,
+    calculate = function(self, card, context)
+        canlaugh_clear_real_paired_backer(card)
+
+        if context.cardarea == G.play and context.main_scoring then
+            if card:can_calculate()
+                and SMODS.pseudorandom_probability(card, "canlaugh_magnesium_break", 1, 2)
+            then
+                canlaugh_queue_magnesium_break(card)
+            end
+
+            return {
+                x_mult = 4,
+                card = card,
+            }
+        end
     end,
 })
 

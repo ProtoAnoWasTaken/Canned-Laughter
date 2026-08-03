@@ -21,6 +21,32 @@ local function frozen_trigger()
     return trigger
 end
 
+local function frozen_hand_is_unplayable()
+    if not (G and G.hand and G.hand.cards and #G.hand.cards > 0) then
+        return false
+    end
+
+    for _, card in ipairs(G.hand.cards) do
+        if not (card.ability and card.ability.canlaugh_frozen_stone) then
+            return false
+        end
+    end
+
+    return true
+end
+
+local function frozen_game_over()
+    if not frozen_hand_is_unplayable() then
+        return
+    end
+
+    G.STATE = G.STATES.GAME_OVER
+    G.STATE_COMPLETE = false
+    if type(check_for_unlock) == "function" then
+        check_for_unlock({ type = "canlaugh_card_drought" })
+    end
+end
+
 CL.register_standard_boss({
     key = "frozen",
     atlas = "boss_frozen",
@@ -61,6 +87,13 @@ CL.register_standard_boss({
         local card = create_playing_card({ front = G.P_CARDS.empty, center = G.P_CENTERS.m_stone }, G.hand)
         if card then
             card.ability.canlaugh_frozen_stone = true
+            G.E_MANAGER:add_event(Event({
+                trigger = "immediate",
+                func = function()
+                    frozen_game_over()
+                    return true
+                end,
+            }))
         end
     end,
     defeat = function(self)

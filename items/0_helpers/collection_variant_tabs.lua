@@ -411,52 +411,6 @@ if Card and type(Card.generate_UIBox_ability_table) == "function" and not CL.col
         return unpack(results)
     end
 
-    local function canlaugh_generate_negative_playing_card_ui(card, vars_only)
-        local old_center = card.config and card.config.center
-        local old_center_key = card.config and card.config.center_key
-        local old_ability_set = card.ability and card.ability.set
-        local old_ability_name = card.ability and card.ability.name
-        local old_preview_center = card.canlaugh_collection_preview_center
-        local old_preview_set = card.canlaugh_collection_preview_set
-        local old_preview_context = card.canlaugh_collection_preview_context
-
-        card.canlaugh_collection_preview_center = nil
-        card.canlaugh_collection_preview_set = nil
-        card.canlaugh_collection_preview_context = nil
-
-        if card.config and G.P_CENTERS and G.P_CENTERS.c_base then
-            card.config.center = G.P_CENTERS.c_base
-            card.config.center_key = "c_base"
-        end
-        if card.ability then
-            card.ability.set = "Default"
-            card.ability.name = "Default Base"
-        end
-
-        local ok, results = pcall(function()
-            return { canlaugh_generate_UIBox_ability_table_ref(card, vars_only) }
-        end)
-
-        card.canlaugh_collection_preview_center = old_preview_center
-        card.canlaugh_collection_preview_set = old_preview_set
-        card.canlaugh_collection_preview_context = old_preview_context
-
-        if card.config then
-            card.config.center = old_center
-            card.config.center_key = old_center_key
-        end
-        if card.ability then
-            card.ability.set = old_ability_set
-            card.ability.name = old_ability_name
-        end
-
-        if not ok then
-            error(results)
-        end
-
-        return unpack(results)
-    end
-
     function Card:generate_UIBox_ability_table(vars_only)
         local center = self.canlaugh_collection_preview_center
         local item_set = self.canlaugh_collection_preview_set
@@ -468,16 +422,6 @@ if Card and type(Card.generate_UIBox_ability_table) == "function" and not CL.col
 
         if center and not center.discovered and item_set == "Trial" and not vars_only then
             return generate_card_ui(center, nil, nil, "Undiscovered", nil, true, nil, nil, self)
-        end
-
-        if center
-            and center.key == "e_negative"
-            and item_set == "Edition"
-            and context == "card"
-            and center.discovered
-            and not vars_only
-        then
-            return canlaugh_generate_negative_playing_card_ui(self, vars_only)
         end
 
         if center and item_set and not vars_only then
@@ -606,7 +550,70 @@ if SMODS and not CL.collection_variant_tabs_installed then
     end
 
     local canlaugh_refresh_trial_collection
-    CL.trial_collection_view = CL.trial_collection_view or { mode = "trials", booster_kind = "Celestial" }
+    local canlaugh_refresh_trial_collection_controls
+    CL.trial_collection_view = CL.trial_collection_view or { mode = "trials", booster_kind = "Standard" }
+
+    local function canlaugh_trial_collection_controls()
+        local view = CL.trial_collection_view
+        local rows = {
+            {
+                n = G.UIT.R,
+                config = { align = "cm", padding = 0.01 },
+                nodes = {
+                    create_option_cycle({
+                        options = { "Trials", "Representatives" },
+                        w = 4.5,
+                        cycle_shoulders = true,
+                        opt_callback = "canlaugh_trial_collection_mode",
+                        current_option = view.mode == "representatives" and 2 or 1,
+                        colour = canlaugh_collection_colour("collection_option_cycle_colour", G.C.RED),
+                        no_pips = true,
+                        focus_args = { snap_to = true, nav = "wide" },
+                    }),
+                },
+            },
+            {
+                n = G.UIT.R,
+                config = { align = "cm", padding = 0.01 },
+                nodes = {
+                    create_option_cycle({
+                        options = { "Standard", "Celestial", "Arcane", "Spectral", "Buffoon" },
+                        w = 4.5,
+                        cycle_shoulders = true,
+                        opt_callback = "canlaugh_trial_collection_category",
+                        current_option = view.booster_kind == "Buffoon" and 5
+                            or view.booster_kind == "Spectral" and 4
+                            or view.booster_kind == "Arcana" and 3
+                            or view.booster_kind == "Celestial" and 2 or 1,
+                        colour = canlaugh_collection_colour("collection_option_cycle_colour", G.C.RED),
+                        no_pips = true,
+                        focus_args = { nav = "wide" },
+                    }),
+                },
+            },
+        }
+
+        if view.mode == "representatives" and view.booster_kind == "Standard" then
+            rows[#rows + 1] = {
+                n = G.UIT.R,
+                config = { align = "cm", padding = 0.01 },
+                nodes = {
+                    create_toggle({
+                        label = "High contrast suitless cards",
+                        ref_table = CL.config,
+                        ref_value = "standard_barter_contrast",
+                        callback = G.FUNCS.canlaugh_standard_barter_contrast_changed,
+                    }),
+                },
+            }
+        end
+
+        return {
+            n = G.UIT.C,
+            config = { align = "cm", minw = 5.2, minh = 7.0, padding = 0.01 },
+            nodes = rows,
+        }
+    end
 
     local function canlaugh_trial_collection_grid(mode, booster_kind)
         local BT = CL.barter
@@ -617,9 +624,10 @@ if SMODS and not CL.collection_variant_tabs_installed then
 
         local buffoon_representatives = mode == "representatives" and booster_kind == "Buffoon"
         local spectral_representatives = mode == "representatives" and booster_kind == "Spectral"
+        local standard_representatives = mode == "representatives" and booster_kind == "Standard"
         local grid_args = {
             raw_pool = true,
-            canlaugh_item_set = mode == "trials" and "Trial" or (buffoon_representatives and "Joker" or "Tarot"),
+            canlaugh_item_set = mode == "trials" and "Trial" or (buffoon_representatives and "Joker" or (standard_representatives and "Default" or "Tarot")),
             canlaugh_context = buffoon_representatives and "joker" or "card",
             canlaugh_bypass_discovery = buffoon_representatives or spectral_representatives,
             canlaugh_page_func = mode == "trials" and "canlaugh_trial_collection_page" or "canlaugh_representative_collection_page",
@@ -640,12 +648,13 @@ if SMODS and not CL.collection_variant_tabs_installed then
                 end
                 if center and not center.discovered and card.children and card.children.center then
                     local placeholder_set = center.canlaugh_placeholder_set or center.atlas or "Tarot"
-                    local undiscovered = placeholder_set == "Planet" and G.p_undiscovered
+                    local undiscovered = placeholder_set == "centers" and G.P_CENTERS.c_base
+                        or placeholder_set == "Planet" and G.p_undiscovered
                         or placeholder_set == "Joker" and G.j_undiscovered
                         or placeholder_set == "Spectral" and G.s_undiscovered
                         or G.t_undiscovered
                     if undiscovered then
-                        card.children.center.atlas = G.ASSET_ATLAS[placeholder_set]
+                        card.children.center.atlas = G.ASSET_ATLAS[placeholder_set == "centers" and "centers" or placeholder_set]
                         card.children.center:set_sprite_pos(undiscovered.pos)
                     end
                 end
@@ -653,7 +662,7 @@ if SMODS and not CL.collection_variant_tabs_installed then
         else
             grid_args.canlaugh_preview_front = G.P_CARDS.empty
             grid_args.modify_card = function(card, center)
-                card.front_hidden = not buffoon_representatives
+                card.front_hidden = not buffoon_representatives and not standard_representatives
                 local rep = BT and BT.collection_representative and BT.collection_representative(center, booster_kind)
                 if rep then
                     card.canlaugh_barter_rep = rep
@@ -663,6 +672,22 @@ if SMODS and not CL.collection_variant_tabs_installed then
                     end
                     if card.ability then
                         card.ability.consumeable = false
+                    end
+                    if standard_representatives and rep.kind == "standard_rank" then
+                        local rank_info = BT.standard_rank_info and BT.standard_rank_info[rep.rank]
+                        local atlas = BT.standard_barter_high_contrast and BT.standard_barter_high_contrast()
+                            and "canlaugh_suitless_sprites_highcon"
+                            or "canlaugh_suitless_sprites"
+                        if rank_info then
+                            card:set_sprites(nil, {
+                                value = rank_info.value,
+                                pos = { x = rank_info.pos, y = 0 },
+                                atlas = atlas,
+                            })
+                        end
+                    elseif standard_representatives and rep.kind == "standard_unknown" and card.children.front then
+                        card.children.front:remove()
+                        card.children.front = nil
                     end
                 end
             end
@@ -689,25 +714,48 @@ if SMODS and not CL.collection_variant_tabs_installed then
         return true
     end
 
+    canlaugh_refresh_trial_collection_controls = function()
+        local target = G.OVERLAY_MENU and G.OVERLAY_MENU:get_UIE_by_ID("canlaugh_trial_collection_controls")
+        if not (target and target.config and target.config.object) then
+            return false
+        end
+
+        target.config.object:remove()
+        target.config.object = UIBox({
+            definition = canlaugh_trial_collection_controls(),
+            config = { align = "cm", parent = target },
+        })
+        return true
+    end
+
     G.FUNCS.canlaugh_trial_collection_mode = function(e)
         CL.trial_collection_view.mode = e and e.cycle_config and e.cycle_config.current_option == 2
             and "representatives" or "trials"
         canlaugh_refresh_trial_collection()
+        canlaugh_refresh_trial_collection_controls()
     end
 
     G.FUNCS.canlaugh_trial_collection_category = function(e)
         local option = e and e.cycle_config and e.cycle_config.current_option or 1
-        CL.trial_collection_view.booster_kind = option == 4 and "Buffoon"
-            or option == 3 and "Spectral"
-            or option == 2 and "Arcana" or "Celestial"
+        CL.trial_collection_view.booster_kind = option == 5 and "Buffoon"
+            or option == 4 and "Spectral"
+            or option == 3 and "Arcana"
+            or option == 2 and "Celestial" or "Standard"
+        canlaugh_refresh_trial_collection()
+        canlaugh_refresh_trial_collection_controls()
+    end
+
+    G.FUNCS.canlaugh_standard_barter_contrast_changed = function()
         canlaugh_refresh_trial_collection()
     end
 
     function create_UIBox_your_collection_trials(mode, booster_kind)
         CL.trial_collection_view.mode = mode == "representatives" and "representatives" or "trials"
-        CL.trial_collection_view.booster_kind = booster_kind == "Spectral" and "Spectral"
+        CL.trial_collection_view.booster_kind = booster_kind == "Standard" and "Standard"
+            or booster_kind == "Spectral" and "Spectral"
             or booster_kind == "Buffoon" and "Buffoon"
-            or booster_kind == "Arcana" and "Arcana" or "Celestial"
+            or booster_kind == "Arcana" and "Arcana"
+            or booster_kind == "Celestial" and "Celestial" or "Standard"
 
         local view = CL.trial_collection_view
         local menu = create_UIBox_generic_options({
@@ -717,55 +765,24 @@ if SMODS and not CL.collection_variant_tabs_installed then
             outline_colour = canlaugh_collection_colour("collection_outline_colour"),
             back_func = "your_collection_other_gameobjects",
             snap_back = true,
-            minw = 14.4,
+            minw = 15.5,
             contents = {
                 {
                     n = G.UIT.C,
-                    config = { align = "cm", minw = 14.4, minh = 7.0, padding = 0.15 },
+                    config = { align = "cm", minw = 15.5, minh = 7.0, padding = 0.15 },
                     nodes = {
                         {
-                            n = G.UIT.C,
-                            config = { align = "cm", minw = 5.2, minh = 7.0, padding = 0.01 },
-                            nodes = {
-                                {
-                                    n = G.UIT.R,
-                                    config = { align = "cm", padding = 0.01 },
-                                    nodes = {
-                                        create_option_cycle({
-                                            options = { "Trials", "Representatives" },
-                                            w = 4.5,
-                                            cycle_shoulders = true,
-                                            opt_callback = "canlaugh_trial_collection_mode",
-                                            current_option = view.mode == "representatives" and 2 or 1,
-                                            colour = canlaugh_collection_colour("collection_option_cycle_colour", G.C.RED),
-                                            no_pips = true,
-                                            focus_args = { snap_to = true, nav = "wide" },
-                                        }),
-                                    },
-                                },
-                                {
-                                    n = G.UIT.R,
-                                    config = { align = "cm", padding = 0.01 },
-                                    nodes = {
-                                        create_option_cycle({
-                                            options = { "Celestial", "Arcane", "Spectral", "Buffoon" },
-                                            w = 4.5,
-                                            cycle_shoulders = true,
-                                            opt_callback = "canlaugh_trial_collection_category",
-                                            current_option = view.booster_kind == "Buffoon" and 4
-                                                or view.booster_kind == "Spectral" and 3
-                                                or view.booster_kind == "Arcana" and 2 or 1,
-                                            colour = canlaugh_collection_colour("collection_option_cycle_colour", G.C.RED),
-                                            no_pips = true,
-                                            focus_args = { nav = "wide" },
-                                        }),
-                                    },
-                                },
+                            n = G.UIT.O,
+                            config = {
+                                id = "canlaugh_trial_collection_controls",
+                                w = 5.2,
+                                h = 7.0,
+                                object = Moveable(),
                             },
                         },
                         {
                             n = G.UIT.C,
-                            config = { align = "cm", minw = 7.5, minh = 7.0, padding = 0 },
+                            config = { align = "cm", minw = 9.5, minh = 7.0, padding = 0 },
                             nodes = {
                                 {
                                     n = G.UIT.O,
@@ -787,6 +804,7 @@ if SMODS and not CL.collection_variant_tabs_installed then
             G.E_MANAGER:add_event(Event({
                 func = function()
                     canlaugh_refresh_trial_collection()
+                    canlaugh_refresh_trial_collection_controls()
                     return true
                 end,
             }))

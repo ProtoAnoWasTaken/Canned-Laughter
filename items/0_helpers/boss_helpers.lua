@@ -98,7 +98,7 @@ function CL.register_standard_boss(def)
     def.pos = { x = 0, y = 0 }
     def.boss = { min = 1, max = 10 }
     def.canlaugh_boss = true
-    def.discovered = true
+    def.discovered = false
     SMODS.Blind(def)
 end
 
@@ -108,8 +108,71 @@ function CL.register_showdown_boss(def)
     def.boss = { min = 1, max = 1000000, showdown = true }
     def.canlaugh_boss = true
     def.canlaugh_showdown = true
-    def.discovered = true
+    def.discovered = false
     SMODS.Blind(def)
+end
+
+function CL.register_super_showdown_boss(def)
+    def.debuff = def.debuff or {}
+    def.pos = { x = 0, y = 0 }
+    def.boss = { min = 1, max = 1000000, showdown = true }
+    def.canlaugh_boss = true
+    def.canlaugh_showdown = true
+    def.canlaugh_superboss = true
+    def.discovered = false
+    SMODS.Blind(def)
+end
+
+function CL.catalyze_rank(card, destroy_ace)
+    if not card or card.removed or card.destroyed or not card.base then
+        return
+    end
+
+    if card.base.id == 14 then
+        if not destroy_ace then
+            local blazing = SMODS
+                and type(SMODS.has_enhancement) == "function"
+                and SMODS.has_enhancement(card, "m_canlaugh_blazing")
+
+            if not blazing then
+                return
+            end
+        end
+
+        card:flip()
+        play_sound("card1", 1, 0.6)
+        G.E_MANAGER:add_event(Event({
+            trigger = "after",
+            delay = 0.2,
+            func = function()
+                if SMODS and type(SMODS.destroy_cards) == "function" then
+                    SMODS.destroy_cards(card)
+                else
+                    card.destroyed = true
+                    card:start_dissolve({ G.C.RED, G.C.ORANGE, G.C.YELLOW }, nil, 1.6)
+                end
+
+                return true
+            end,
+        }))
+        return
+    end
+
+    local rank_id = card.base.id == 2 and 14 or card.base.id - 1
+    local rank = CL.consumables and CL.consumables.rank_center and CL.consumables.rank_center(rank_id)
+
+    if not rank then
+        return
+    end
+
+    if CL.consumables and type(CL.consumables.tarot_flip) == "function" then
+        CL.consumables.tarot_flip(card, function()
+            SMODS.change_base(card, nil, rank.key)
+        end)
+        return
+    end
+
+    SMODS.change_base(card, nil, rank.key)
 end
 
 function CL.baton_select_all()

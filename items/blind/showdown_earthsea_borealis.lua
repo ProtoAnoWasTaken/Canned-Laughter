@@ -320,6 +320,7 @@ SMODS.Blind({
     boss = { min = 1, max = 1000000, showdown = true },
     canlaugh_boss = true,
     canlaugh_showdown = true,
+    canlaugh_superboss = true,
     boss_colour = HEX("4569A8"),
     mult = 4,
     discovered = false,

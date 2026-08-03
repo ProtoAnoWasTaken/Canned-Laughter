@@ -200,6 +200,9 @@ if type(discover_card) == "function" and not CL.achievement_discovery_hook then
 
     function discover_card(center, ...)
         local results = { discover_card_ref(center, ...) }
+        if center and center.key == "c_soul" and type(check_for_unlock) == "function" then
+            check_for_unlock({ type = "canlaugh_stanczyk_soul_discovered" })
+        end
         center = force_discover_canned_laughter_joker(center)
         check_discovery_achievements(center)
         return unpack(results)
@@ -272,5 +275,44 @@ function CL.record_egg_man_egg()
 
     if profile.canlaugh_egg_man_eggs >= 5 and type(check_for_unlock) == "function" then
         check_for_unlock({ type = "canlaugh_room_in_between" })
+    end
+end
+
+local function canlaugh_achievement_full_play_limit(context)
+    local play_limit = G and G.GAME and G.GAME.starting_params and G.GAME.starting_params.play_limit or 5
+    return context and #(context.full_hand or {}) == play_limit
+end
+
+local function canlaugh_achievement_all_frozen(cards)
+    if #(cards or {}) == 0 or type(CL.is_frozen) ~= "function" then
+        return false
+    end
+
+    for _, card in ipairs(cards) do
+        if not CL.is_frozen(card) then
+            return false
+        end
+    end
+
+    return true
+end
+
+if SMODS and type(SMODS.calculate_context) == "function" and not CL.frozen_hand_achievement_hook_installed then
+    CL.frozen_hand_achievement_hook_installed = true
+    local calculate_context_ref = SMODS.calculate_context
+
+    function SMODS.calculate_context(context, return_table, no_resolve, ...)
+        local results = { calculate_context_ref(context, return_table, no_resolve, ...) }
+
+        if context
+            and context.before
+            and canlaugh_achievement_full_play_limit(context)
+            and canlaugh_achievement_all_frozen(context.full_hand)
+            and type(check_for_unlock) == "function"
+        then
+            check_for_unlock({ type = "canlaugh_forbidden_path" })
+        end
+
+        return unpack(results)
     end
 end

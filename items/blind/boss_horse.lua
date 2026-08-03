@@ -54,4 +54,11 @@ CL.register_standard_boss({
         if triggered then return true end
         if not check then sizes[size] = true end
     end,
+    defeat = function(self)
+        if type(check_for_unlock) == "function" then
+            check_for_unlock({
+                type = "canlaugh_horse_defeated",
+            })
+        end
+    end,
 })

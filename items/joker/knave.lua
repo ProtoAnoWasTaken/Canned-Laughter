@@ -42,6 +42,11 @@ local function knave_active()
     return SMODS and next(SMODS.find_card("j_canlaugh_knave") or {}) ~= nil
 end
 
+local function canlaugh_knave_full_hand(cards)
+    local play_limit = G and G.GAME and G.GAME.starting_params and G.GAME.starting_params.play_limit or 5
+    return #(cards or {}) == play_limit
+end
+
 if G and G.FUNCS and type(G.FUNCS.get_poker_hand_info) == "function" and not CannedLaughter.knave_hand_hook_installed then
     CannedLaughter.knave_hand_hook_installed = true
     local get_poker_hand_info_ref = G.FUNCS.get_poker_hand_info
@@ -87,6 +92,9 @@ SMODS.Joker({
         if context.repetition and context.cardarea == G.play
             and ranks_total_twenty_one(context.full_hand)
         then
+            if canlaugh_knave_full_hand(context.full_hand) and type(check_for_unlock) == "function" then
+                check_for_unlock({ type = "canlaugh_five_card_charlie" })
+            end
             if mathematician_active() and not ranks_total_twenty_one(context.full_hand, false)
                 and type(check_for_unlock) == "function" then
                 check_for_unlock({ type = "canlaugh_house_rules" })

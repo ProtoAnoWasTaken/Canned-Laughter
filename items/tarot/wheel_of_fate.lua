@@ -9,7 +9,7 @@ SMODS.Tarot({
     atlas = "wheel_of_fate",
     pos = { x = 0, y = 0 },
     cost = 3,
-    weight = 0.5,
+    weight = 10,
     config = {
         extra = 4,
     },

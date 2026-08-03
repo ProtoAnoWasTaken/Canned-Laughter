@@ -13,10 +13,34 @@ BT.skip_label = "Skip"
 BT.mega_success_hooks = BT.mega_success_hooks or {}
 BT.rep_modifiers = BT.rep_modifiers or {}
 BT.special_reps = BT.special_reps or {}
+BT.trial_count_modifiers = BT.trial_count_modifiers or {}
+BT.duplicate_trial_modifiers = BT.duplicate_trial_modifiers or {}
+BT.mercy_modifiers = BT.mercy_modifiers or {}
+CL.config = CL.config or {}
+CL.config.standard_barter_contrast = CL.config.standard_barter_contrast == true
+    or CL.config.standard_barter_contrast == "High Contrast"
+
+SMODS.Atlas({
+    key = "suitless_sprites",
+    path = "suitless_sprites.png",
+    px = 71,
+    py = 93,
+})
+
+SMODS.Atlas({
+    key = "suitless_sprites_highcon",
+    path = "suitless_sprites_highcon.png",
+    px = 71,
+    py = 93,
+})
 
 local remove_barter_buttons
 local representative_pool
 local apply_rep_modifiers
+
+function BT.standard_barter_high_contrast()
+    return CL.config and CL.config.standard_barter_contrast == true
+end
 
 function BT.register_mega_success_hook(booster_kind, key, callback)
     if not (booster_kind and key and type(callback) == "function") then
@@ -41,10 +65,62 @@ end
 
 local function available_representative_count(booster_kind)
     local pool = representative_pool(booster_kind)
-    apply_rep_modifiers("pool", { booster_kind = booster_kind, pool = pool, preview = true })
+    if booster_kind ~= "Standard" then
+        apply_rep_modifiers("pool", { booster_kind = booster_kind, pool = pool, preview = true })
+    end
     local context = { booster_kind = booster_kind, base_reps = #pool, extra_reps = 0 }
-    apply_rep_modifiers("availability", context)
+    if booster_kind ~= "Standard" then
+        apply_rep_modifiers("availability", context)
+    end
     return #pool + (context.extra_reps or 0)
+end
+
+function BT.register_trial_count_modifier(key, callback)
+    if key and type(callback) == "function" then
+        BT.trial_count_modifiers[key] = callback
+    end
+end
+
+function BT.register_duplicate_trial_modifier(key, callback)
+    if key and type(callback) == "function" then
+        BT.duplicate_trial_modifiers[key] = callback
+    end
+end
+
+function BT.register_mercy_modifier(key, callback)
+    if key and type(callback) == "function" then
+        BT.mercy_modifiers[key] = callback
+    end
+end
+
+function BT.additional_trial_count(context)
+    local count = 0
+
+    for _, callback in pairs(BT.trial_count_modifiers) do
+        count = count + math.max(0, tonumber(callback(context)) or 0)
+    end
+
+    return count
+end
+
+function BT.allows_duplicate_trials(context)
+    for _, callback in pairs(BT.duplicate_trial_modifiers) do
+        if callback(context) then
+            return true
+        end
+    end
+
+    return false
+end
+
+function BT.has_barter_mercy(context)
+    for _, callback in pairs(BT.mercy_modifiers) do
+        if callback(context) then
+            return true
+        end
+    end
+
+    return false
 end
 
 apply_rep_modifiers = function(phase, context)
@@ -97,6 +173,11 @@ local function center_key_for_trial(def)
 end
 
 local function trial_placeholder(def)
+    if def.standard_card then
+        local base_center = G.P_CENTERS and G.P_CENTERS.c_base
+        return "centers", (base_center and base_center.pos) or { x = 1, y = 0 }
+    end
+
     local set = def.placeholder_set or "Tarot"
     local undiscovered = set == "Planet" and G.p_undiscovered
         or set == "Joker" and G.j_undiscovered
@@ -135,6 +216,12 @@ BT.spectral_reps = BT.spectral_reps or {
     { key = "c_aura", kind = "edition", editions = { foil = true, holo = true, plastic = true }, loc = { "Representative of a {C:dark_edition}Foil{}, {C:dark_edition}Holographic{}, or {C:canlaugh_plastic}Plastic{} card" } },
     { key = "c_hex", kind = "edition", editions = { polychrome = true, celestial = true }, loc = { "Representative of a {C:dark_edition}Polychrome{} or {C:dark_edition}Celestial{} card" } },
     { key = "c_ectoplasm", kind = "edition", editions = { negative = true }, loc = { "Representative of a {C:dark_edition}Negative{} card" } },
+    {
+        key = "c_canlaugh_cryomancy",
+        kind = "edition",
+        editions = { frozen = true },
+        loc = { "Representative of {C:attention}4{} {C:canlaugh_frozen}Frozen{} cards" },
+    },
 }
 
 local function spectral_card_edition(card)
@@ -147,6 +234,9 @@ local function spectral_card_edition(card)
     if edition.canlaugh_glitter or edition.key == "e_canlaugh_glitter" then return "glitter" end
     if edition.canlaugh_plastic or edition.key == "e_canlaugh_plastic" then return "plastic" end
     if edition.canlaugh_celestial or edition.key == "e_canlaugh_celestial" then return "celestial" end
+    if edition.canlaugh_frozen or edition.key == "e_canlaugh_frozen" then
+        return "frozen"
+    end
 end
 
 local function spectral_playing_cards()
@@ -159,7 +249,16 @@ end
 local function spectral_representative_pool()
     local pool = {}
     local aces, faces, numbers = 0, 0, 0
-    local edition_counts = { foil = 0, holo = 0, polychrome = 0, negative = 0, glitter = 0, plastic = 0, celestial = 0 }
+    local edition_counts = {
+        foil = 0,
+        holo = 0,
+        polychrome = 0,
+        negative = 0,
+        glitter = 0,
+        plastic = 0,
+        celestial = 0,
+        frozen = 0,
+    }
 
     for _, card in ipairs(G.playing_cards or {}) do
         local id = card.base and card.base.id
@@ -194,6 +293,7 @@ local function spectral_representative_pool()
     add("c_aura", edition_counts.foil + edition_counts.holo + edition_counts.plastic, BT.spectral_reps[5])
     add("c_hex", edition_counts.polychrome + edition_counts.celestial, BT.spectral_reps[6])
     add("c_ectoplasm", edition_counts.negative, BT.spectral_reps[7])
+    add("c_canlaugh_cryomancy", math.floor(edition_counts.frozen / 4), BT.spectral_reps[8])
 
     local aura_index = 0
     local hex_index = 0
@@ -487,6 +587,10 @@ local function celestial_representative_pool()
 end
 
 function BT.representative_collection_pool(booster_kind)
+    if booster_kind == "Standard" then
+        return BT.standard_representative_collection_pool and BT.standard_representative_collection_pool() or {}
+    end
+
     if booster_kind == "Celestial" then
         local pool = {}
         for _, center in ipairs(G.P_CENTER_POOLS and G.P_CENTER_POOLS.Planet or {}) do
@@ -551,6 +655,10 @@ function BT.collection_representative(center, booster_kind)
 
     local special = BT.special_reps[booster_kind] and BT.special_reps[booster_kind][center.key]
     if special then return copy_table(special) end
+
+    if booster_kind == "Standard" and center.canlaugh_standard_rep then
+        return copy_table(center.canlaugh_standard_rep)
+    end
 
     if booster_kind == "Celestial" then
         if center.key == "c_black_hole" then
@@ -690,17 +798,26 @@ function BT.representative_loc_center(center_key, tooltip, rep)
         return nil
     end
 
-    local rep_suffix = rep and table.concat({ rep.hand_key or "", rep.body or "", rep.kind or "" }, "_") or center_key
+    local rep_suffix = rep and table.concat({
+        rep.hand_key or "",
+        rep.body or "",
+        rep.kind or "",
+        rep.rank or "",
+    }, "_") or center_key
     local loc_key = "canlaugh_barter_rep_" .. (tooltip and "tooltip_" or "main_") .. tostring(center_key) .. "_" .. rep_suffix
     local name = "Trial Representation"
     if not tooltip then
-        local center = G.P_CENTERS and G.P_CENTERS[center_key]
-        local ok, localized_name = pcall(localize, {
-            type = "name_text",
-            key = center_key,
-            set = center and center.set or "Tarot",
-        })
-        name = ok and localized_name or (center and center.name) or center_key
+        if rep and rep.name then
+            name = rep.name
+        else
+            local center = G.P_CENTERS and G.P_CENTERS[center_key]
+            local ok, localized_name = pcall(localize, {
+                type = "name_text",
+                key = center_key,
+                set = center and center.set or "Tarot",
+            })
+            name = ok and localized_name or (center and center.name) or center_key
+        end
     end
 
     ensure_other_loc(loc_key, name, loc)
@@ -770,6 +887,7 @@ function BT.register_trial(def)
             name = def.name,
             text = def.loc,
         },
+        loc_vars = def.loc_vars,
         can_use = function(self, card)
             return BT.active
                 and not BT.play_mode
@@ -802,10 +920,14 @@ function BT.register_trial(def)
             name = def.name,
             text = def.loc,
         },
+        loc_vars = def.loc_vars,
         mod = SMODS.current_mod,
         canlaugh_placeholder_set = placeholder_set,
     }
     if center then
+        if def.loc_vars then
+            center.loc_vars = def.loc_vars
+        end
         def.center = center
         def.center_key = center.key
         BT.trial_center_by_key[def.key] = center
@@ -1004,6 +1126,16 @@ function BT.is_spectral_booster(center)
     return center.kind == "Spectral" or key:lower():find("spectral", 1, true) or name:find("Spectral", 1, true)
 end
 
+function BT.is_standard_booster(center)
+    if not center then
+        return false
+    end
+
+    local key = tostring(center.key or "")
+    local name = tostring(center.name or "")
+    return center.kind == "Standard" or key:lower():find("standard", 1, true) or name:find("Standard", 1, true)
+end
+
 function BT.booster_kind(center)
     if BT.is_arcana_booster(center) then
         return "Arcana"
@@ -1016,6 +1148,9 @@ function BT.booster_kind(center)
     end
     if BT.is_spectral_booster(center) then
         return "Spectral"
+    end
+    if BT.is_standard_booster(center) then
+        return "Standard"
     end
 end
 
@@ -1052,12 +1187,17 @@ function BT.required_trials(card)
     local key = tostring((center and center.key) or (card and card.config and card.config.center_key) or ""):lower()
     local name = tostring((center and center.name) or (card and card.ability and card.ability.name) or ""):lower()
 
-    local privilege = next(SMODS.find_card("j_canlaugh_jesters_privilege") or {}) and 1 or 0
+    local privilege = 0
+    if not BT.is_standard_booster(center) then
+        privilege = next(SMODS.find_card("j_canlaugh_jesters_privilege") or {}) and 1 or 0
+    end
     if key:find("mega", 1, true) or name:find("mega", 1, true) then
-        return math.max(1, 3 - privilege)
+        local reduction = CL.challenge_active and CL.challenge_active("jens_mod") and 1 or 0
+        return math.max(1, 3 - privilege - reduction)
     end
     if key:find("jumbo", 1, true) or name:find("jumbo", 1, true) then
-        return math.max(1, 3 - privilege)
+        local reduction = CL.challenge_active and CL.challenge_active("jens_mod") and 1 or 0
+        return math.max(1, 3 - privilege - reduction)
     end
     return 1
 end
@@ -1121,7 +1261,267 @@ local function is_wild(card)
         and SMODS.has_any_suit(card)
 end
 
+local standard_rank_info = {
+    [2] = {
+        value = "2",
+        name = "Two",
+        plural = "Twos",
+        display_plural = "2s",
+        pos = 0,
+    },
+    [3] = {
+        value = "3",
+        name = "Three",
+        plural = "Threes",
+        display_plural = "3s",
+        pos = 1,
+    },
+    [4] = {
+        value = "4",
+        name = "Four",
+        plural = "Fours",
+        display_plural = "4s",
+        pos = 2,
+    },
+    [5] = {
+        value = "5",
+        name = "Five",
+        plural = "Fives",
+        display_plural = "5s",
+        pos = 3,
+    },
+    [6] = {
+        value = "6",
+        name = "Six",
+        plural = "Sixes",
+        display_plural = "6s",
+        pos = 4,
+    },
+    [7] = {
+        value = "7",
+        name = "Seven",
+        plural = "Sevens",
+        display_plural = "7s",
+        pos = 5,
+    },
+    [8] = {
+        value = "8",
+        name = "Eight",
+        plural = "Eights",
+        display_plural = "8s",
+        pos = 6,
+    },
+    [9] = {
+        value = "9",
+        name = "Nine",
+        plural = "Nines",
+        display_plural = "9s",
+        pos = 7,
+    },
+    [10] = {
+        value = "10",
+        name = "Ten",
+        plural = "Tens",
+        display_plural = "10s",
+        pos = 8,
+    },
+    [11] = {
+        value = "Jack",
+        name = "Jack",
+        plural = "Jacks",
+        display_plural = "Jacks",
+        pos = 9,
+        face = true,
+    },
+    [12] = {
+        value = "Queen",
+        name = "Queen",
+        plural = "Queens",
+        display_plural = "Queens",
+        pos = 10,
+        face = true,
+    },
+    [13] = {
+        value = "King",
+        name = "King",
+        plural = "Kings",
+        display_plural = "Kings",
+        pos = 11,
+        face = true,
+    },
+    [14] = {
+        value = "Ace",
+        name = "Ace",
+        plural = "Aces",
+        display_plural = "Aces",
+        pos = 12,
+    },
+}
+
+BT.standard_rank_info = standard_rank_info
+
+local function standard_card_is_unknown(card)
+    if not card then
+        return false
+    end
+
+    return (type(SMODS.has_no_suit) == "function" and SMODS.has_no_suit(card))
+        or (type(SMODS.has_any_suit) == "function" and SMODS.has_any_suit(card))
+end
+
+local function standard_card_number(card, rank)
+    local nominal = card and card.base and card.base.nominal
+    local mathematician_bonus = card and card.ability and card.ability.canlaugh_mathematician_bonus or 0
+
+    return (tonumber(nominal) or rank) + mathematician_bonus
+end
+
+local function standard_representative_pool()
+    local rank_counts = {}
+    local rank_numbers = {}
+    local unknown_count = 0
+
+    for _, card in ipairs(G.playing_cards or {}) do
+        if not card.canlaugh_barter_rep then
+            if standard_card_is_unknown(card) then
+                unknown_count = unknown_count + 1
+            else
+                local rank = card.base and card.base.id
+                if standard_rank_info[rank] then
+                    rank_counts[rank] = (rank_counts[rank] or 0) + 1
+                    rank_numbers[rank] = standard_card_number(card, rank)
+                end
+            end
+        end
+    end
+
+    local pool = {}
+    for rank = 2, 14 do
+        local info = standard_rank_info[rank]
+        local count = math.floor((rank_counts[rank] or 0) / 2)
+        for index = 1, count do
+            pool[#pool + 1] = {
+                key = "c_base",
+                set = "Standard",
+                kind = "standard_rank",
+                rank = rank,
+                number = rank_numbers[rank] or rank,
+                face = info.face,
+                name = "The " .. info.name,
+                loc = {
+                    "Representative of 2 " .. info.plural,
+                    "in your deck",
+                },
+                identity = "standard_" .. tostring(rank) .. "_" .. tostring(index),
+            }
+        end
+    end
+
+    for index = 1, unknown_count do
+        pool[#pool + 1] = {
+            key = "c_base",
+            set = "Standard",
+            kind = "standard_unknown",
+            name = "The Unknown",
+            loc = {
+                "Representative of a suitless",
+                "or multisuit card in your deck",
+                "Acts as a wild representation",
+            },
+            identity = "standard_unknown_" .. tostring(index),
+        }
+    end
+
+    return pool
+end
+
+function BT.standard_representative_collection_pool()
+    local pool = {}
+    local base_center = G.P_CENTERS and G.P_CENTERS.c_base
+    if not base_center then
+        return pool
+    end
+
+    local function make_center(key, name, rep)
+        local center = {}
+        for field, value in pairs(base_center) do
+            center[field] = value
+        end
+        center.key = key
+        center.name = name
+        center.canlaugh_standard_rep = rep
+        center.discovered = true
+        return center
+    end
+
+    for rank = 2, 14 do
+        local info = standard_rank_info[rank]
+        pool[#pool + 1] = make_center(
+            "c_canlaugh_standard_rep_" .. tostring(rank),
+            "The " .. info.name,
+            {
+                key = "c_base",
+                set = "Standard",
+                kind = "standard_rank",
+                rank = rank,
+                number = rank,
+                face = info.face,
+                name = "The " .. info.name,
+                loc = {
+                    "Representative of 2 " .. info.plural,
+                    "in your deck",
+                },
+            }
+        )
+    end
+
+    pool[#pool + 1] = make_center("c_canlaugh_standard_rep_unknown", "The Unknown", {
+        key = "c_base",
+        set = "Standard",
+        kind = "standard_unknown",
+        name = "The Unknown",
+        loc = {
+            "Representative of a suitless",
+            "or multisuit card in your deck",
+            "Acts as a wild representation",
+        },
+    })
+
+    return pool
+end
+
+function BT.standard_range_bounds()
+    local lowest
+    local highest
+
+    for _, rep in ipairs(standard_representative_pool()) do
+        if rep.kind == "standard_rank" then
+            if not lowest or rep.rank < lowest then
+                lowest = rep.rank
+            end
+            if not highest or rep.rank > highest then
+                highest = rep.rank
+            end
+        end
+    end
+
+    if not (lowest and highest) then
+        return nil
+    end
+
+    return {
+        lowest_rank = lowest,
+        highest_rank = highest,
+        lowest = standard_rank_info[lowest],
+        highest = standard_rank_info[highest],
+    }
+end
+
 representative_pool = function(booster_kind)
+    if booster_kind == "Standard" then
+        return standard_representative_pool()
+    end
+
     if booster_kind == "Celestial" then
         return celestial_representative_pool()
     end
@@ -1147,7 +1547,11 @@ representative_pool = function(booster_kind)
 
     for _, card in ipairs(G.playing_cards or {}) do
         if not card.canlaugh_barter_rep then
-            if is_stone(card) or (type(SMODS.has_no_suit) == "function" and SMODS.has_no_suit(card)) then
+            if SMODS.has_enhancement(card, "m_canlaugh_blazing") then
+                counts.wild = counts.wild + 1
+            elseif SMODS.has_enhancement(card, "m_canlaugh_concrete") then
+                counts.stone = counts.stone + 1
+            elseif is_stone(card) or (type(SMODS.has_no_suit) == "function" and SMODS.has_no_suit(card)) then
                 counts.stone = counts.stone + 1
             elseif is_wild(card) then
                 if harlequin_active and card.is_face and card:is_face(true) then
@@ -1202,6 +1606,51 @@ local function take_random_rep()
 end
 
 local function create_representative_card(rep)
+    if rep.kind == "standard_rank" then
+        local rank_info = standard_rank_info[rep.rank]
+        local base_front = rank_info and G.P_CARDS["S_" .. (rank_info.value == "10" and "T" or rank_info.value:sub(1, 1))]
+        local card = base_front and Card(
+            BT.hand_area.T.x + BT.hand_area.T.w / 2,
+            BT.hand_area.T.y,
+            G.CARD_W,
+            G.CARD_H,
+            base_front,
+            G.P_CENTERS.c_base,
+            {
+                bypass_discovery_center = true,
+                bypass_discovery_ui = true,
+            }
+        )
+
+        if card and rank_info then
+            local atlas = BT.standard_barter_high_contrast()
+                and "canlaugh_suitless_sprites_highcon"
+                or "canlaugh_suitless_sprites"
+            card:set_sprites(nil, {
+                value = rank_info.value,
+                pos = { x = rank_info.pos, y = 0 },
+                atlas = atlas,
+            })
+        end
+
+        return card
+    end
+
+    if rep.kind == "standard_unknown" then
+        return Card(
+            BT.hand_area.T.x + BT.hand_area.T.w / 2,
+            BT.hand_area.T.y,
+            G.CARD_W,
+            G.CARD_H,
+            G.P_CARDS.empty,
+            G.P_CENTERS.c_base,
+            {
+                bypass_discovery_center = true,
+                bypass_discovery_ui = true,
+            }
+        )
+    end
+
     local args = {
         set = rep.set or "Tarot",
         area = BT.hand_area,
@@ -1470,14 +1919,20 @@ local function create_barter_hand()
     BT.draw_reps(hand_limit)
 end
 
-local function sample_trials(count, booster_kind)
+local function sample_trials(count, booster_kind, allow_duplicates)
     local pool = BT.trial_pool_for(booster_kind)
     local picked = {}
 
-    for _ = 1, math.min(count, #pool) do
+    for _ = 1, count do
+        if #pool == 0 then
+            break
+        end
+
         local idx = math.floor(pseudorandom("canlaugh_barter_trial") * #pool) + 1
         picked[#picked + 1] = pool[idx]
-        table.remove(pool, idx)
+        if not allow_duplicates then
+            table.remove(pool, idx)
+        end
     end
     return picked
 end
@@ -1510,7 +1965,17 @@ local function replace_pack_with_trials()
         end
     end
 
-    local trial_count = ((BT.required or 1) > 1 and 4 or 3) + #(SMODS.find_card("j_canlaugh_harlequin") or {})
+    local trial_count
+    if BT.active_booster_kind == "Standard" then
+        trial_count = 4
+    else
+        trial_count = ((BT.required or 1) > 1 and 4 or 3) + #(SMODS.find_card("j_canlaugh_harlequin") or {})
+    end
+    BT.additional_trials = BT.additional_trial_count({
+        booster_kind = BT.active_booster_kind,
+        booster_card = BT.opened_booster_card,
+    })
+    trial_count = trial_count + BT.additional_trials
     local trial_slots = BT.pack_card_slots
     if trial_count == 3 and #BT.pack_card_slots == 3 then
         trial_slots = {}
@@ -1526,10 +1991,32 @@ local function replace_pack_with_trials()
             end
         end
     end
+    if trial_count > #trial_slots then
+        local first_slot = trial_slots[1]
+        local pack_mid_x = G.pack_cards.T.x + G.pack_cards.T.w / 2
+        local card_spacing = G.CARD_W * 0.84
+
+        trial_slots = {}
+        for i = 1, trial_count do
+            trial_slots[i] = {
+                x = pack_mid_x + (i - (trial_count + 1) / 2) * card_spacing,
+                y = first_slot and first_slot.y or G.pack_cards.T.y,
+                r = first_slot and first_slot.r or 0,
+                scale = first_slot and first_slot.scale or 1,
+            }
+        end
+    end
     G.pack_cards.config.card_limit = math.max(G.pack_cards.config.card_limit or 0, trial_count)
     G.pack_cards.config.highlight_limit = 1
 
-    for i, trial in ipairs(sample_trials(trial_count, BT.active_booster_kind)) do
+    for i, trial in ipairs(sample_trials(
+        trial_count,
+        BT.active_booster_kind,
+        BT.allows_duplicate_trials({
+            booster_kind = BT.active_booster_kind,
+            booster_card = BT.opened_booster_card,
+        })
+    )) do
         local center = trial.center
             or (trial.center_key and G.P_CENTERS and G.P_CENTERS[trial.center_key])
             or (trial.center_key and SMODS and SMODS.Centers and SMODS.Centers[trial.center_key])
@@ -1603,17 +2090,25 @@ function BT.start()
         highlight_limit = G.pack_cards.config.highlight_limit,
     }
     BT.jumbo_fallback = is_jumbo_booster(booster_card)
+        or BT.has_barter_mercy({
+            booster_kind = BT.active_booster_kind,
+            booster_card = booster_card,
+        })
     BT.opened_booster_card = booster_card
     BT.joker_effect_state = {}
     BT.rep_pool = representative_pool(BT.active_booster_kind)
-    apply_rep_modifiers("pool", { booster_kind = BT.active_booster_kind, pool = BT.rep_pool })
+    if BT.active_booster_kind ~= "Standard" then
+        apply_rep_modifiers("pool", { booster_kind = BT.active_booster_kind, pool = BT.rep_pool })
+    end
 
     G.GAME.pack_choices = BT.required
 
     move_run_areas_offscreen()
     tuck_real_hand()
     create_barter_hand()
-    apply_rep_modifiers("hand", { booster_kind = BT.active_booster_kind })
+    if BT.active_booster_kind ~= "Standard" then
+        apply_rep_modifiers("hand", { booster_kind = BT.active_booster_kind })
+    end
     replace_pack_with_trials()
     schedule_late_hand_tucks()
     remove_barter_buttons()
@@ -1643,7 +2138,153 @@ local function smeared_suits_match(first_suit, second_suit)
     })[first_suit] == second_suit
 end
 
+local function standard_prosopamnesia_active()
+    return next(SMODS.find_card("j_canlaugh_prosopamnesia") or {}) ~= nil
+end
+
+local function standard_selected_reps()
+    local reps = {}
+
+    for _, card in ipairs(selected_reps()) do
+        local rep = card.canlaugh_barter_rep
+        if rep then
+            reps[#reps + 1] = rep
+        end
+    end
+    return reps
+end
+
+local function standard_rank_count(reps, rank_filter)
+    local matching = 0
+    local wild = 0
+
+    for _, rep in ipairs(reps) do
+        if rep.kind == "standard_unknown" then
+            wild = wild + 1
+        elseif rep.kind == "standard_rank" and rank_filter(rep) then
+            matching = matching + 1
+        end
+    end
+
+    return matching + wild
+end
+
+local function standard_court_count(reps)
+    local unknown = 0
+    local faces = 0
+    local represented = {
+        [11] = false,
+        [12] = false,
+        [13] = false,
+    }
+
+    for _, rep in ipairs(reps) do
+        if rep.kind == "standard_unknown" then
+            unknown = unknown + 1
+        elseif rep.kind == "standard_rank" and represented[rep.rank] ~= nil then
+            represented[rep.rank] = true
+            faces = faces + 1
+        end
+    end
+
+    if standard_prosopamnesia_active() then
+        return math.min(3, faces + unknown)
+    end
+
+    local count = unknown
+    for _, rank in ipairs({ 11, 12, 13 }) do
+        if represented[rank] then
+            count = count + 1
+        end
+    end
+
+    return math.min(3, count)
+end
+
+local function standard_range_count(reps)
+    local bounds = BT.standard_range_bounds()
+    if not bounds then
+        return 0
+    end
+
+    local lowest = bounds.lowest_rank
+    local highest = bounds.highest_rank
+
+    local unknown = 0
+    local lowest_count = 0
+    local highest_count = 0
+    for _, rep in ipairs(reps) do
+        if rep.kind == "standard_unknown" then
+            unknown = unknown + 1
+        elseif rep.kind == "standard_rank" and rep.rank == lowest then
+            lowest_count = lowest_count + 1
+        elseif rep.kind == "standard_rank" and rep.rank == highest then
+            highest_count = highest_count + 1
+        end
+    end
+
+    if lowest == highest then
+        if lowest_count + unknown >= 2 then
+            return 4
+        end
+
+        return math.min(3, lowest_count + unknown)
+    end
+
+    local missing_lowest = math.max(0, 2 - lowest_count)
+    local missing_highest = math.max(0, 2 - highest_count)
+    if unknown >= missing_lowest + missing_highest then
+        return 4
+    end
+
+    return math.min(3, lowest_count + highest_count + unknown)
+end
+
+local function standard_trial_count(trial)
+    local reps = standard_selected_reps()
+
+    if trial.kind == "standard_court" then
+        return standard_court_count(reps)
+    end
+    if trial.kind == "standard_range" then
+        return standard_range_count(reps)
+    end
+    if trial.kind == "standard_mountain" then
+        return standard_rank_count(reps, function(rep)
+            return rep.rank == 14
+        end)
+    end
+    if trial.kind == "standard_academy" then
+        return standard_rank_count(reps, function(rep)
+            return rep.rank >= 2 and rep.rank <= 5
+        end)
+    end
+    if trial.kind == "standard_market" then
+        return standard_rank_count(reps, function(rep)
+            return rep.number % 2 == 1
+                or (rep.face and standard_prosopamnesia_active())
+        end)
+    end
+    if trial.kind == "standard_home" then
+        return standard_rank_count(reps, function(rep)
+            return rep.number % 2 == 0
+                or (rep.face and standard_prosopamnesia_active())
+        end)
+    end
+    if trial.kind == "standard_town" then
+        return standard_rank_count(reps, function(rep)
+            return rep.rank >= 6 and rep.rank <= 10
+        end)
+    end
+
+    return 0
+end
+
 function BT.count_selected_for(trial)
+    if trial and tostring(trial.kind or ""):find("standard_", 1, true) == 1 then
+        return standard_trial_count(trial)
+    end
+
     local count = 0
     local distinct_hands = {}
     local distinct_rarities = {}
@@ -1813,7 +2454,7 @@ function BT.destroy_selected_reps()
 end
 
 function BT.fail_threshold()
-    return math.floor((BT.required or 1) / 2) + 1
+    return math.floor((BT.required or 1) / 2) + 1 + (BT.additional_trials or 0)
 end
 
 local function remaining_trial_cards()
@@ -1857,23 +2498,27 @@ function BT.resolve_trial(card)
         if selected.canlaugh_barter_rep then chosen_reps[#chosen_reps + 1] = selected.canlaugh_barter_rep end
     end
     local passed = BT.count_selected_for(trial) >= trial.need
-    apply_rep_modifiers("resolved", {
-        booster_kind = BT.active_booster_kind,
-        trial = trial,
-        passed = passed,
-        selected_reps = chosen_reps,
-    })
+    if BT.active_booster_kind ~= "Standard" then
+        apply_rep_modifiers("resolved", {
+            booster_kind = BT.active_booster_kind,
+            trial = trial,
+            passed = passed,
+            selected_reps = chosen_reps,
+        })
+    end
     if passed then
         BT.successes = (BT.successes or 0) + 1
-        for _, pack_rat in ipairs(SMODS.find_card("j_canlaugh_pack_rat") or {}) do
-            local extra = pack_rat.ability.extra
-            extra.trials = (extra.trials or 0) + 1
-            local new_slots = 1 + math.floor(extra.trials / 2)
-            if new_slots > (extra.slots or 1) then
-                local gain = new_slots - (extra.slots or 1)
-                extra.slots = new_slots
-                G.consumeables.config.card_limit = G.consumeables.config.card_limit + gain
-                card_eval_status_text(pack_rat, "extra", nil, nil, nil, { message = "+" .. gain .. " Slot", colour = G.C.FILTER })
+        if BT.active_booster_kind ~= "Standard" then
+            for _, pack_rat in ipairs(SMODS.find_card("j_canlaugh_pack_rat") or {}) do
+                local extra = pack_rat.ability.extra
+                extra.trials = (extra.trials or 0) + 1
+                local new_slots = 1 + math.floor(extra.trials / 2)
+                if new_slots > (extra.slots or 1) then
+                    local gain = new_slots - (extra.slots or 1)
+                    extra.slots = new_slots
+                    G.consumeables.config.card_limit = G.consumeables.config.card_limit + gain
+                    card_eval_status_text(pack_rat, "extra", nil, nil, nil, { message = "+" .. gain .. " Slot", colour = G.C.FILTER })
+                end
             end
         end
         card_eval_status_text(card, "extra", nil, nil, nil, { message = "Passed!", colour = G.C.GREEN })
@@ -1974,7 +2619,9 @@ end
 
 local function sell_unclaimed_rewards(on_complete)
     local function cash_out_value(value)
-        if next(SMODS.find_card("j_canlaugh_goldbeard") or {}) then
+        if BT.reward_booster_kind ~= "Standard"
+            and next(SMODS.find_card("j_canlaugh_goldbeard") or {})
+        then
             return math.floor(value * 1.5)
         end
         return value
@@ -2022,6 +2669,7 @@ local function sell_unclaimed_rewards(on_complete)
                 local center_cost = reward_card.config and reward_card.config.center and reward_card.config.center.cost
                 local value = center_cost or reward_card.cost or reward_card.sell_cost or 0
                 if reward_card.ability and reward_card.ability.consumeable
+                    and BT.reward_booster_kind ~= "Standard"
                     and next(SMODS.find_card("j_canlaugh_jesters_privilege") or {})
                 then
                     value = math.floor(value * 0.5)
@@ -2052,6 +2700,7 @@ local function clear_trial_state(keep_rewards)
     BT.required = nil
     BT.successes = nil
     BT.failures = nil
+    BT.additional_trials = nil
     if not keep_rewards then
         BT.reward_cards = nil
     end
@@ -2069,6 +2718,9 @@ local function clear_trial_state(keep_rewards)
     BT.jumbo_fallback = nil
     BT.opened_booster_card = nil
     BT.mega_success_dispatched = nil
+    if not keep_rewards then
+        BT.reward_booster_kind = nil
+    end
     if not keep_rewards and G and G.GAME then
         G.GAME.canlaugh_barter_save = nil
     end
@@ -2254,6 +2906,7 @@ function BT.enter_reward_phase()
     end
 
     G.GAME.pack_choices = reward_count
+    BT.reward_booster_kind = BT.active_booster_kind
     BT.reward_phase = true
     clear_trial_state(true)
     BT.skip_label = "Cash Out"
@@ -2276,6 +2929,7 @@ function BT.finish_reward_phase(on_complete)
         end
         BT.reward_cards = nil
         BT.reward_phase = nil
+        BT.reward_booster_kind = nil
         BT.cashing_out = nil
         BT.skip_label = "Skip"
         if G and G.GAME then G.GAME.canlaugh_barter_save = nil end
@@ -2296,6 +2950,7 @@ local function barter_save_snapshot()
         version = 1,
         phase = BT.reward_phase and "reward" or "trial",
         active_booster_kind = BT.active_booster_kind,
+        reward_booster_kind = BT.reward_booster_kind,
         required = BT.required,
         successes = BT.successes,
         failures = BT.failures,
@@ -2305,6 +2960,7 @@ local function barter_save_snapshot()
         bonus_reps_dealt = BT.bonus_reps_dealt,
         hand_reps = hand_reps,
         joker_effect_state = BT.joker_effect_state,
+        additional_trials = BT.additional_trials,
         pack_card_slots = BT.pack_card_slots,
         vanilla_pack_choices = BT.vanilla_pack_choices,
         saved_pack_config = BT.saved_pack_config,
@@ -2347,6 +3003,7 @@ function BT.restore_saved_barter()
     end
     BT.saved_hands_left = saved.saved_hands_left
     BT.saved_discards_left = saved.saved_discards_left
+    BT.additional_trials = saved.additional_trials
     BT.pack_card_slots = saved.pack_card_slots
     BT.saved_pack_config = saved.saved_pack_config
     BT.saved_area_positions = saved.saved_area_positions
@@ -2354,6 +3011,7 @@ function BT.restore_saved_barter()
     BT.jumbo_fallback = saved.jumbo_fallback
     BT.mega_success_dispatched = saved.mega_success_dispatched
     BT.opened_booster_card = opened_booster_card()
+    BT.reward_booster_kind = saved.reward_booster_kind
 
     if saved.phase == "reward" then
         if G.hand.states then G.hand.states.visible = true end
@@ -2441,6 +3099,7 @@ if Game and type(Game.start_run) == "function" and not BT.start_run_wrapped then
         BT.cashing_out = nil
         BT.hand_area = nil
         BT.reward_cards = nil
+        BT.reward_booster_kind = nil
         G.canlaugh_barter_hand = nil
 
         local results = { start_run_ref(self, args) }

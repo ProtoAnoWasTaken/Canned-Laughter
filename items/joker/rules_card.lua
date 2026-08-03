@@ -665,6 +665,13 @@ SMODS.Joker({
     blueprint_compat = false,
     eternal_compat = true,
     perishable_compat = true,
+    get_weight = function(self)
+        if CL.challenge_active and CL.challenge_active("double_reacharound") then
+            return self.weight * 3
+        end
+
+        return self.weight
+    end,
     check_for_unlock = function(self, args)
         return args and args.type == "canlaugh_invisible_joker_over_limit"
     end,

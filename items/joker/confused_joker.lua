@@ -89,6 +89,55 @@ local function with_copied_joker(card, center, callback)
     return unpack(results, 2)
 end
 
+local function copied_joker_tooltip(card, center)
+    return {
+        key = center.key,
+        set = center.set,
+        canlaugh_confused_card = card,
+        canlaugh_confused_center = center,
+    }
+end
+
+if type(generate_card_ui) == "function" and not CL.confused_tooltip_hook_installed then
+    CL.confused_tooltip_hook_installed = true
+    local generate_card_ui_ref = generate_card_ui
+
+    function generate_card_ui(center, full_UI_table, specific_vars, card_type, badges, hide_desc, main_start, main_end, card)
+        local copied_card = center and center.canlaugh_confused_card
+        local copied_center = center and center.canlaugh_confused_center
+
+        if copied_card and copied_center then
+            return with_copied_joker(copied_card, copied_center, function()
+                local loc_vars, tooltip_start, tooltip_end = copied_card:generate_UIBox_ability_table(true)
+
+                return generate_card_ui_ref(
+                    copied_center,
+                    full_UI_table,
+                    loc_vars,
+                    copied_card.ability.set,
+                    badges,
+                    hide_desc,
+                    tooltip_start,
+                    tooltip_end,
+                    copied_card
+                )
+            end)
+        end
+
+        return generate_card_ui_ref(
+            center,
+            full_UI_table,
+            specific_vars,
+            card_type,
+            badges,
+            hide_desc,
+            main_start,
+            main_end,
+            card
+        )
+    end
+end
+
 if type(copy_card) == "function" and not CL.confused_copy_hook_installed then
     CL.confused_copy_hook_installed = true
     local copy_card_ref = copy_card
@@ -164,6 +213,9 @@ if Card and type(Card.calculate_joker) == "function" and CL.confused_calculate_h
                 self.ability.extra.copied_ability_key = nil
                 self.ability.extra.copied_ability = nil
                 if center then
+                    if center.key == "j_canlaugh_still_life" and type(check_for_unlock) == "function" then
+                        check_for_unlock({ type = "canlaugh_stay_in_character" })
+                    end
                     copied_joker_ability(self, center)
                     if CL.confused_add_to_deck_ref then
                         with_copied_joker(self, center, function()
@@ -226,7 +278,7 @@ SMODS.Joker({
     loc_vars = function(self, info_queue, card)
         local center = copied_center(card)
         if center then
-            CannedLaughter.add_unique_tooltip(info_queue, center, card)
+            CannedLaughter.add_unique_tooltip(info_queue, copied_joker_tooltip(card, center), card)
         end
 
         return {

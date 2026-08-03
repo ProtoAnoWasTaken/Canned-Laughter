@@ -93,6 +93,12 @@ SMODS.Spectral({
         },
     },
     loc_vars = function(self, info_queue, card)
+        local glitter = G and G.P_CENTERS and G.P_CENTERS.e_canlaugh_glitter
+
+        if glitter then
+            CL.add_unique_tooltip(info_queue, glitter, card)
+        end
+
         return {
             vars = {
                 canlaugh_daguerreotype_payout(),
