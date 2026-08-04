@@ -89,7 +89,7 @@ local function canlaugh_jrpg_display_banned_cards()
     return banned_cards
 end
 
-SMODS.Challenge({
+local jrpg_challenge = SMODS.Challenge({
     key = "that_one_part_of_the_jrpg",
     loc_txt = {
         name = "That One Part of the JRPG",
@@ -132,3 +132,8 @@ SMODS.Challenge({
         CannedLaughter.force_challenge_boss(get_new_boss())
     end,
 })
+
+if jrpg_challenge then
+    CannedLaughter.challenge_registry_entries = CannedLaughter.challenge_registry_entries or {}
+    CannedLaughter.challenge_registry_entries[jrpg_challenge.id] = jrpg_challenge
+end

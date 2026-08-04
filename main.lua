@@ -663,11 +663,35 @@ local function cl_restore_active_challenge_registry_entry()
         return
     end
 
+    local cached_challenge = CL.challenge_registry_entries and CL.challenge_registry_entries[challenge_key]
+    if cached_challenge then
+        SMODS.Challenges[challenge_key] = cached_challenge
+        return
+    end
+
+    local registered_challenge = SMODS.Challenge
+        and type(SMODS.Challenge.get_obj) == "function"
+        and SMODS.Challenge:get_obj(challenge_key)
+    if registered_challenge then
+        SMODS.Challenges[challenge_key] = registered_challenge
+        return
+    end
+
     for _, challenge in ipairs(G.CHALLENGES or {}) do
         if challenge and (challenge.id == challenge_key or challenge.key == challenge_key) then
             SMODS.Challenges[challenge_key] = challenge
             return
         end
+    end
+end
+
+if SMODS and type(SMODS.calculate_context) == "function" and not CL.challenge_registry_calculation_hook_installed then
+    CL.challenge_registry_calculation_hook_installed = true
+    local cl_calculate_context_ref = SMODS.calculate_context
+
+    function SMODS.calculate_context(context, return_table, no_resolve, ...)
+        cl_restore_active_challenge_registry_entry()
+        return cl_calculate_context_ref(context, return_table, no_resolve, ...)
     end
 end
 
