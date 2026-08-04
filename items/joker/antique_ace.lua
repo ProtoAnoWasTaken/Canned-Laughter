@@ -5,6 +5,8 @@ SMODS.Atlas({
     py = 93,
 })
 
+local CL = CannedLaughter
+
 local BANNED_ANTIQUE_SEALS = {
     canlaugh_phosphate = true,
     canlaugh_calcite = true,
