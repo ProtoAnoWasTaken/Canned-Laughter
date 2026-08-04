@@ -66,7 +66,7 @@ SMODS.Back({
             return {
                 message = localize("k_again_ex"),
                 repetitions = 1,
-                card = back,
+                card = context.other_card,
             }
         end
     end,
