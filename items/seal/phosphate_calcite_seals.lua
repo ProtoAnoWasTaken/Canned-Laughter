@@ -92,62 +92,6 @@ local function canlaugh_apply_phosphate_xmult(card)
     }, card)
 end
 
-local function canlaugh_break_magnesium(card)
-    if not card or card.canlaugh_magnesium_breaking then
-        return
-    end
-
-    card.canlaugh_magnesium_breaking = true
-
-    local function break_card()
-        if card and not card.removed and type(card.start_dissolve) == "function" then
-            card.getting_sliced = true
-            card.destroyed = true
-            card:start_dissolve({ G.C.CANLAUGH_MAGNESIUM }, true, 1.6)
-            play_sound("slice1", 0.96 + math.random() * 0.08)
-        end
-
-        return true
-    end
-
-    if G and G.E_MANAGER then
-        G.E_MANAGER:add_event(Event({
-            trigger = "after",
-            delay = 0.4,
-            func = break_card,
-        }))
-        return
-    end
-
-    break_card()
-end
-
-local function canlaugh_queue_magnesium_break(card)
-    if not card or card.canlaugh_magnesium_break_queued then
-        return
-    end
-
-    card.canlaugh_magnesium_break_queued = true
-    CL.magnesium_break_cards = CL.magnesium_break_cards or {}
-    CL.magnesium_break_cards[#CL.magnesium_break_cards + 1] = card
-end
-
-local function canlaugh_resolve_magnesium_breaks()
-    local cards = CL.magnesium_break_cards
-    CL.magnesium_break_cards = nil
-
-    if not cards then
-        return
-    end
-
-    for _, card in ipairs(cards) do
-        if card then
-            card.canlaugh_magnesium_break_queued = nil
-            canlaugh_break_magnesium(card)
-        end
-    end
-end
-
 local function canlaugh_force_phosphate_cards_front(cards)
     if not cards then
         return
@@ -612,10 +556,6 @@ if SMODS and type(SMODS.calculate_context) == "function" and not CL.phosphate_ca
             canlaugh_reset_phosphate_returns()
         end
 
-        if context and context.final_scoring_step then
-            canlaugh_resolve_magnesium_breaks()
-        end
-
         return unpack(results)
     end
 end
@@ -858,11 +798,16 @@ SMODS.Seal({
     calculate = function(self, card, context)
         canlaugh_clear_real_paired_backer(card)
 
+        if context.destroying_card == card and card.canlaugh_magnesium_break_queued then
+            play_sound("slice1", 0.96 + math.random() * 0.08)
+            return { remove = true }
+        end
+
         if context.cardarea == G.play and context.main_scoring then
             if card:can_calculate()
                 and SMODS.pseudorandom_probability(card, "canlaugh_magnesium_break", 1, 2)
             then
-                canlaugh_queue_magnesium_break(card)
+                card.canlaugh_magnesium_break_queued = true
             end
 
             return {

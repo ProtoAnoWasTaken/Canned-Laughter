@@ -22,12 +22,19 @@ CL.register_standard_boss({
         },
     },
     calculate = function(self, blind, context)
-        if not (context and context.after and context.full_hand) then
+        if context
+            and context.destroying_card
+            and context.destroying_card.canlaugh_catalyze_destroy_after_scoring
+        then
+            return { remove = true }
+        end
+
+        if not (context and context.final_scoring_step and context.full_hand) then
             return
         end
 
         for _, card in ipairs(context.full_hand) do
-            CL.catalyze_rank(card, false)
+            CL.catalyze_rank(card, false, true)
         end
     end,
 })

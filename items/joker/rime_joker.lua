@@ -1,38 +1,6 @@
 local CL = rawget(_G, "CannedLaughter") or {}
 CannedLaughter = CL
 
-local function canlaugh_rime_hand_key()
-    local round = G and G.GAME and G.GAME.current_round
-    return table.concat({
-        tostring(G and G.GAME and G.GAME.round or ""),
-        tostring(round and round.hands_played or ""),
-    }, ":")
-end
-
-local function canlaugh_rime_destroy_frozen(card, scoring_hand)
-    local frozen = {}
-
-    for _, playing_card in ipairs(scoring_hand or {}) do
-        if CL.is_frozen and CL.is_frozen(playing_card) then
-            frozen[#frozen + 1] = playing_card
-        end
-    end
-
-    if #frozen == 0 then
-        return 0
-    end
-
-    if type(play_sound) == "function" then
-        play_sound("glass1", 1, 0.5)
-    end
-
-    SMODS.destroy_cards(frozen, {
-        immediate = true,
-    })
-
-    return #frozen
-end
-
 if CL.barter then
     CL.barter.register_rep_modifier("rime_joker", function(phase, context)
         if phase == "availability" and context.booster_kind == "Spectral" then
@@ -98,20 +66,35 @@ SMODS.Joker({
     calculate = function(self, card, context)
         local extra = card.ability.extra
 
-        if context.after and not context.blueprint then
-            local hand_key = canlaugh_rime_hand_key()
-            if extra.last_hand ~= hand_key then
-                extra.last_hand = hand_key
-                local destroyed = canlaugh_rime_destroy_frozen(card, context.scoring_hand)
-                if destroyed > 0 then
-                    local gain = destroyed * extra.mult_gain
-                    extra.mult = extra.mult + gain
-                    card:juice_up(0.3, 0.5)
-                    return {
-                        message = "+" .. tostring(gain) .. " Mult",
-                        colour = G.C.MULT,
-                    }
+        if context.destroying_card
+            and context.cardarea == G.play
+            and CL.is_frozen
+            and CL.is_frozen(context.destroying_card)
+            and not context.blueprint
+        then
+            return { remove = true }
+        end
+
+        if context.remove_playing_cards and not context.blueprint then
+            local destroyed = 0
+
+            for _, playing_card in ipairs(context.removed or {}) do
+                if CL.is_frozen and CL.is_frozen(playing_card) then
+                    destroyed = destroyed + 1
                 end
+            end
+
+            if destroyed > 0 then
+                local gain = destroyed * extra.mult_gain
+                extra.mult = extra.mult + gain
+                if type(play_sound) == "function" then
+                    play_sound("glass1", 1, 0.5)
+                end
+                card:juice_up(0.3, 0.5)
+                return {
+                    message = "+" .. tostring(gain) .. " Mult",
+                    colour = G.C.MULT,
+                }
             end
         end
 

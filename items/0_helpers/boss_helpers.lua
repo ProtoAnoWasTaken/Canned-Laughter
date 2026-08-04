@@ -123,7 +123,7 @@ function CL.register_super_showdown_boss(def)
     SMODS.Blind(def)
 end
 
-function CL.catalyze_rank(card, destroy_ace)
+function CL.catalyze_rank(card, destroy_ace, destroy_after_scoring)
     if not card or card.removed or card.destroyed or not card.base then
         return
     end
@@ -141,6 +141,10 @@ function CL.catalyze_rank(card, destroy_ace)
 
         card:flip()
         play_sound("card1", 1, 0.6)
+        if destroy_after_scoring then
+            card.canlaugh_catalyze_destroy_after_scoring = true
+            return
+        end
         G.E_MANAGER:add_event(Event({
             trigger = "after",
             delay = 0.2,

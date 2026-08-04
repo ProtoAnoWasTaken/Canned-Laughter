@@ -30,19 +30,7 @@ local function descend(card)
     if card.base.id == 14 then
         card:flip()
         play_sound("card1", 1, 0.6)
-        G.E_MANAGER:add_event(Event({
-            trigger = "after",
-            delay = 0.2,
-            func = function()
-                if SMODS and type(SMODS.destroy_cards) == "function" then
-                    SMODS.destroy_cards(card)
-                else
-                    card.destroyed = true
-                    card:start_dissolve({ G.C.RED, G.C.ORANGE, G.C.YELLOW }, nil, 1.6)
-                end
-                return true
-            end,
-        }))
+        card.ability.canlaugh_blazing_destroy_after_scoring = true
         return
     end
     local rank = CL.consumables.rank_center(card.base.id == 2 and 14 or card.base.id - 1)
@@ -82,6 +70,10 @@ SMODS.Enhancement({
         }
     end,
     calculate = function(self, card, context)
+        if context.destroying_card == card and card.ability.canlaugh_blazing_destroy_after_scoring then
+            return { remove = true }
+        end
+
         if context.cardarea == G.play and context.main_scoring then
             CL.blazing_score_queue = CL.blazing_score_queue or {}
             if not card.ability.canlaugh_blazing_queued_this_score then

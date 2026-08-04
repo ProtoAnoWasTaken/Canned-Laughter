@@ -29,6 +29,13 @@ SMODS.Joker({
         "with different ranks, destroy the lower-rank card",
     } },
     calculate = function(self, card, context)
+        if context.destroying_card
+            and context.destroying_card.canlaugh_warlord_destroyed
+            and not context.blueprint
+        then
+            return { remove = true }
+        end
+
         if context.first_hand_drawn and context.hand_drawn and not context.blueprint then
             G.GAME.current_round.canlaugh_warlord_destroyed = nil
             card.ability.extra.flipped_cards = {}
@@ -59,13 +66,8 @@ SMODS.Joker({
             if first:get_id() ~= second:get_id() then
                 local lower = first:get_id() < second:get_id() and first or second
                 G.GAME.current_round.canlaugh_warlord_destroyed = true
+                lower.canlaugh_warlord_destroyed = true
                 play_sound("slice1")
-                if SMODS and type(SMODS.destroy_cards) == "function" then
-                    SMODS.destroy_cards(lower, { immediate = true })
-                elseif type(lower.start_dissolve) == "function" then
-                    lower.destroyed = true
-                    lower:start_dissolve()
-                end
                 return { message = "Sliced!", colour = G.C.RED }
             end
         end

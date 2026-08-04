@@ -56,6 +56,7 @@ SMODS.Joker({
 
         if context.destroying_card
             and context.cardarea == G.play
+            and context.destroying_card.canlaugh_blackcollar_destroyed
             and canlaugh_blackcollar_target(context.destroying_card)
             and not context.blueprint
         then
