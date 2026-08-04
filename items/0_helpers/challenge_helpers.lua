@@ -47,6 +47,14 @@ function CL.challenge_banned_cards(keys)
     return cards
 end
 
+local function challenge_is_legendary_joker(center)
+    local rarity = center and center.rarity
+
+    return center
+        and center.set == "Joker"
+        and (rarity == 4 or rarity == "Legendary" or rarity == "legendary")
+end
+
 function CL.spirited_away_banned_cards()
     local cards = {}
 
@@ -61,6 +69,7 @@ function CL.spirited_away_banned_cards()
             or key == "j_canlaugh_spirit_world"
         local allowed = center.set == "Tarot"
             or tarot_joker
+            or challenge_is_legendary_joker(center)
             or (center.set == "Booster" and (center.kind == "Arcana" or center.kind == "Standard"))
         local restricted = center.set == "Joker"
             or center.set == "Booster"
@@ -280,6 +289,10 @@ local function challenge_spirited_pool(pool, pool_type, legendary)
     if pool_type == "Joker" and legendary and G.GAME.canlaugh_spirited_stanczyk_pending then
         G.GAME.canlaugh_spirited_stanczyk_pending = nil
         return { "j_canlaugh_stanczyk" }
+    end
+
+    if legendary then
+        return pool
     end
 
     local allowed = {}

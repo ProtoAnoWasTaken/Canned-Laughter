@@ -205,16 +205,8 @@ SMODS.Joker({
         }
     end,
     locked_loc_vars = function(self, info_queue, card)
-        if not (G and G.P_CENTERS and G.P_CENTERS.c_soul and G.P_CENTERS.c_soul.discovered) then
-            return {
-                not_hidden = true,
-                vars = {},
-            }
-        end
-
         return {
-            key = "joker_locked_legendary",
-            set = "Other",
+            not_hidden = true,
             vars = {},
         }
     end,

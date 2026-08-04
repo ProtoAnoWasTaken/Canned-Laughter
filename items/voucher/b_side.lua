@@ -78,14 +78,14 @@ SMODS.Atlas({
     key = "b_side",
     path = "b_side.png",
     px = 71,
-    py = 95,
+    py = 93,
 })
 
 SMODS.Atlas({
     key = "vinyl_print",
     path = "vinyl_release.png",
     px = 71,
-    py = 95,
+    py = 93,
 })
 
 SMODS.Voucher({

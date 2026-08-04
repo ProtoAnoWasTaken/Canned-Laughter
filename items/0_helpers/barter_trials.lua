@@ -548,8 +548,11 @@ local function celestial_representative_pool()
         local hand = G.GAME and G.GAME.hands and G.GAME.hands[hand_key]
         if hand then
             registered_hands = registered_hands + 1
-            local level = math.max(1, hand.level or 1)
-            local copies = math.max(0, level - 1)
+            local level = math.floor(tonumber(hand.level) or 1)
+            if level < 1 then
+                level = 1
+            end
+            local copies = level - 1
             local secret_played = BT.is_secret_hand(hand_key, hand) and (hand.played or 0) > 0
             if secret_played and copies == 0 then
                 copies = 1
@@ -3490,6 +3493,27 @@ if Card and type(Card.selectable_from_pack) == "function" and not BT.reward_sele
             return has_room and reward_card_area_key(self) or nil, false
         end
         return selectable_from_pack_ref(self, pack, ...)
+    end
+end
+
+if G and G.FUNCS and type(G.FUNCS.can_select_from_booster) == "function" and not BT.reward_select_button_wrapped then
+    BT.reward_select_button_wrapped = true
+    local can_select_from_booster_ref = G.FUNCS.can_select_from_booster
+
+    function G.FUNCS.can_select_from_booster(e, ...)
+        local card = e and e.config and e.config.ref_table
+        if card
+            and card.canlaugh_barter_reward
+            and BT.reward_phase
+            and card.area == G.pack_cards
+            and reward_card_area(card) == G.deck
+        then
+            e.config.colour = G.C.GREEN
+            e.config.button = "use_card"
+            return
+        end
+
+        return can_select_from_booster_ref(e, ...)
     end
 end
 

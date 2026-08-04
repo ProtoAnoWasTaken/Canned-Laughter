@@ -23,6 +23,7 @@ local function copied_joker_ability(card, center)
     end
 
     local config = center.config or {}
+    local previous_ability = card.ability or {}
     local ability = {
         name = center.name,
         effect = center.effect,
@@ -42,8 +43,32 @@ local function copied_joker_ability(card, center)
         h_size = config.h_size or 0,
         d_size = config.d_size or 0,
         extra = copy_table(config.extra) or nil,
+        extra_value = previous_ability.extra_value or 0,
         type = config.type or "",
         order = center.order,
+        forced_selection = previous_ability.forced_selection,
+        perma_bonus = previous_ability.perma_bonus or 0,
+        perma_x_chips = previous_ability.perma_x_chips or 0,
+        perma_mult = previous_ability.perma_mult or 0,
+        perma_x_mult = previous_ability.perma_x_mult or 0,
+        perma_h_chips = previous_ability.perma_h_chips or 0,
+        perma_h_x_chips = previous_ability.perma_h_x_chips or 0,
+        perma_h_mult = previous_ability.perma_h_mult or 0,
+        perma_h_x_mult = previous_ability.perma_h_x_mult or 0,
+        perma_p_dollars = previous_ability.perma_p_dollars or 0,
+        perma_h_dollars = previous_ability.perma_h_dollars or 0,
+        perma_repetitions = previous_ability.perma_repetitions or 0,
+        card_limit = previous_ability.card_limit or 0,
+        extra_slots_used = previous_ability.extra_slots_used or 0,
+        perma_score = previous_ability.perma_score or 0,
+        perma_h_score = previous_ability.perma_h_score or 0,
+        perma_x_score = previous_ability.perma_x_score or 0,
+        perma_h_x_score = previous_ability.perma_h_x_score or 0,
+        perma_blind_size = previous_ability.perma_blind_size or 0,
+        perma_h_blind_size = previous_ability.perma_h_blind_size or 0,
+        perma_x_blind_size = previous_ability.perma_x_blind_size or 0,
+        perma_h_x_blind_size = previous_ability.perma_h_x_blind_size or 0,
+        debuff_sources = {},
     }
     for key, value in pairs(config) do
         ability[key] = type(value) == "table" and copy_table(value) or value

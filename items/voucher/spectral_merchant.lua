@@ -120,14 +120,14 @@ SMODS.Atlas({
     key = "spectral_merchant",
     path = "spectral_merchant.png",
     px = 71,
-    py = 95,
+    py = 93,
 })
 
 SMODS.Atlas({
     key = "spectral_tycoon",
     path = "spectral_tycoon.png",
     px = 71,
-    py = 95,
+    py = 93,
 })
 
 SMODS.Voucher({

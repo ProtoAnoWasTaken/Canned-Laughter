@@ -84,14 +84,14 @@ SMODS.Atlas({
     key = "magpies_eye",
     path = "magpies_eye.png",
     px = 71,
-    py = 95,
+    py = 93,
 })
 
 SMODS.Atlas({
     key = "magicians_eye",
     path = "magicians_eye.png",
     px = 71,
-    py = 95,
+    py = 93,
 })
 
 SMODS.Voucher({
