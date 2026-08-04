@@ -7,7 +7,8 @@ local GHOST_TYCOON_LOC_KEY = "b_canlaugh_ghost_tycoon"
 local GHOST_TYCOON_LOC_TXT = {
     name = "Ghost Deck",
     text = {
-        "Start with {C:spectral,T:v_canlaugh_spectral_merchant}Spectral Merchant{}",
+        "Start run with",
+        "{C:spectral,T:v_canlaugh_spectral_merchant}Spectral Merchant{}",
         "and {C:spectral,T:v_canlaugh_spectral_tycoon}Spectral Tycoon{}",
     },
 }
@@ -149,7 +150,8 @@ if not (CL.config and CL.config.disable_edition_modifier_overrides) and SMODS.Ba
         loc_txt = {
             name = "Ghost Deck",
             text = {
-                "Start with {C:spectral,T:v_canlaugh_spectral_merchant}Spectral Merchant{}",
+                "Start run with",
+                "{C:spectral,T:v_canlaugh_spectral_merchant}Spectral Merchant{}",
             },
         },
         loc_vars = function()
