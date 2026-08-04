@@ -219,7 +219,7 @@ local function canlaugh_install_stop_sign_hooks()
     end
 
     local trigger_effects_ref = SMODS.trigger_effects
-    function SMODS.trigger_effects(effects, card)
+    function SMODS.trigger_effects(effects, card, ...)
         if canlaugh_should_intercept_playing_card_editions()
             and not CL.stop_sign_replaying
             and canlaugh_is_queued_scoring_card(card)
@@ -227,7 +227,7 @@ local function canlaugh_install_stop_sign_hooks()
             local immediate_effects, delayed_effects = canlaugh_split_playing_card_edition_effects(card, effects)
             canlaugh_queue_stop_sign_effects(card, delayed_effects)
 
-            local flags = trigger_effects_ref(immediate_effects, card) or {}
+            local flags = trigger_effects_ref(immediate_effects, card, ...) or {}
             if delayed_effects and #delayed_effects > 0 then
                 flags.calculated = true
             end
@@ -235,7 +235,7 @@ local function canlaugh_install_stop_sign_hooks()
             return flags
         end
 
-        local flags = trigger_effects_ref(effects, card)
+        local flags = trigger_effects_ref(effects, card, ...)
         canlaugh_finish_stop_sign_joker_scoring(card)
         return flags
     end
@@ -256,7 +256,7 @@ local function canlaugh_install_stop_sign_hooks()
     end
 
     local calculate_context_ref = SMODS.calculate_context
-    function SMODS.calculate_context(context, return_table, no_resolve)
+    function SMODS.calculate_context(context, return_table, no_resolve, ...)
         if CL.stop_sign_queue
             and not CL.stop_sign_replaying
             and context
@@ -265,7 +265,7 @@ local function canlaugh_install_stop_sign_hooks()
             canlaugh_flush_stop_sign_queue(CL.stop_sign_scoring_hand)
         end
 
-        return calculate_context_ref(context, return_table, no_resolve)
+        return calculate_context_ref(context, return_table, no_resolve, ...)
     end
 end
 

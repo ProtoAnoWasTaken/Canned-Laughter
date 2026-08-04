@@ -272,10 +272,10 @@ if G and G.FUNCS and type(G.FUNCS.buy_from_shop) == "function" and not CL.felt_j
     CL.felt_joker_buy_hook_installed = true
     local buy_from_shop_ref = G.FUNCS.buy_from_shop
 
-    function G.FUNCS.buy_from_shop(e)
+    function G.FUNCS.buy_from_shop(e, ...)
         local card = e and e.config and e.config.ref_table
         local cost = card and card.cost
-        local result = buy_from_shop_ref(e)
+        local result = buy_from_shop_ref(e, ...)
 
         if result ~= false then
             canlaugh_felt_record_shop_purchase(cost, card)
@@ -289,10 +289,10 @@ if G and G.FUNCS and type(G.FUNCS.reroll_shop) == "function" and not CL.felt_jok
     CL.felt_joker_reroll_hook_installed = true
     local reroll_shop_ref = G.FUNCS.reroll_shop
 
-    function G.FUNCS.reroll_shop(e)
+    function G.FUNCS.reroll_shop(e, ...)
         local cost = G.GAME and G.GAME.current_round and G.GAME.current_round.reroll_cost
         canlaugh_felt_record_shop_purchase(cost)
-        return reroll_shop_ref(e)
+        return reroll_shop_ref(e, ...)
     end
 end
 

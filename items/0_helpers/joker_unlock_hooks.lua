@@ -405,13 +405,13 @@ if G and G.FUNCS and type(G.FUNCS.buy_from_shop) == "function" and not CL.playin
     CL.playing_card_buy_hook_installed = true
     local canlaugh_buy_from_shop_ref = G.FUNCS.buy_from_shop
 
-    function G.FUNCS.buy_from_shop(e)
+    function G.FUNCS.buy_from_shop(e, ...)
         local card = e and e.config and e.config.ref_table
         local is_playing_card = canlaugh_is_playing_card(card)
             and not (card.area == G.deck or card.area == G.hand or card.area == G.play)
         local is_shop_joker = G and G.shop_jokers and card and card.area == G.shop_jokers
 
-        local ret = canlaugh_buy_from_shop_ref(e)
+        local ret = canlaugh_buy_from_shop_ref(e, ...)
 
         if ret ~= false and is_playing_card then
             CL.unlocks.increment_playing_cards_acquired(1)

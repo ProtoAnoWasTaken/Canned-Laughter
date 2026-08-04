@@ -652,6 +652,38 @@ end
 
 load_folder("localization")
 load_folder("items")
+
+local function cl_restore_active_challenge_registry_entry()
+    local challenge_key = G and G.GAME and G.GAME.challenge
+    if not (challenge_key and SMODS and SMODS.Challenges) then
+        return
+    end
+
+    if SMODS.Challenges[challenge_key] then
+        return
+    end
+
+    for _, challenge in ipairs(G.CHALLENGES or {}) do
+        if challenge and (challenge.id == challenge_key or challenge.key == challenge_key) then
+            SMODS.Challenges[challenge_key] = challenge
+            return
+        end
+    end
+end
+
+if SMODS and type(SMODS.get_card_areas) == "function" and not CL.challenge_registry_compat_hook_installed then
+    CL.challenge_registry_compat_hook_installed = true
+    local cl_get_card_areas_ref = SMODS.get_card_areas
+
+    function SMODS.get_card_areas(area_type, context, ...)
+        if area_type == "individual" then
+            cl_restore_active_challenge_registry_entry()
+        end
+
+        return cl_get_card_areas_ref(area_type, context, ...)
+    end
+end
+
 cl_normalize_collection_order()
 cl_install_unlock_recheck_hook()
 

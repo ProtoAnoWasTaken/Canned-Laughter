@@ -84,8 +84,8 @@ if SMODS and type(SMODS.calculate_context) == "function" and not CL.plastic_tag_
     CL.plastic_tag_shop_joker_hook_installed = true
     local canlaugh_calculate_context_ref = SMODS.calculate_context
 
-    function SMODS.calculate_context(context, return_table, no_resolve)
-        local flags = canlaugh_calculate_context_ref(context, return_table, no_resolve) or return_table or {}
+    function SMODS.calculate_context(context, return_table, no_resolve, ...)
+        local flags = canlaugh_calculate_context_ref(context, return_table, no_resolve, ...) or return_table or {}
 
         if context
             and context.create_shop_card

@@ -107,8 +107,8 @@ if SMODS and type(SMODS.calculate_context) == "function" and not CL.blind_payout
     CL.blind_payout_voucher_hook_installed = true
     local cl_calculate_context_ref = SMODS.calculate_context
 
-    function SMODS.calculate_context(context, return_table, no_resolve)
-        local results = { cl_calculate_context_ref(context, return_table, no_resolve) }
+    function SMODS.calculate_context(context, return_table, no_resolve, ...)
+        local results = { cl_calculate_context_ref(context, return_table, no_resolve, ...) }
 
         if context
             and context.modify_final_cashout

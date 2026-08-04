@@ -167,8 +167,8 @@ if SMODS and type(SMODS.calculate_context) == "function" and not CL.shadow_seal_
     CL.shadow_seal_hook_installed = true
     local cl_shadow_calculate_context_ref = SMODS.calculate_context
 
-    function SMODS.calculate_context(context, return_table, no_resolve)
-        local results = { cl_shadow_calculate_context_ref(context, return_table, no_resolve) }
+    function SMODS.calculate_context(context, return_table, no_resolve, ...)
+        local results = { cl_shadow_calculate_context_ref(context, return_table, no_resolve, ...) }
 
         if context
             and context.initial_scoring_step

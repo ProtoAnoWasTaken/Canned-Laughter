@@ -293,13 +293,13 @@ if Card and type(Card.set_ability) == "function" and not CL.frozen_ability_chang
     CL.frozen_ability_change_hook_installed = true
     local set_ability_ref = Card.set_ability
 
-    function Card:set_ability(center, initial, delay_sprites)
+    function Card:set_ability(center, initial, delay_sprites, ...)
         if is_frozen(self) and not initial then
             restore_ability(self)
             return
         end
 
-        return set_ability_ref(self, center, initial, delay_sprites)
+        return set_ability_ref(self, center, initial, delay_sprites, ...)
     end
 end
 
@@ -444,8 +444,8 @@ if SMODS and type(SMODS.calculate_context) == "function" and not CL.frozen_score
     CL.frozen_score_hook_installed = true
     local calculate_context_ref = SMODS.calculate_context
 
-    function SMODS.calculate_context(context, return_table, no_resolve)
-        local result = calculate_context_ref(context, return_table, no_resolve)
+    function SMODS.calculate_context(context, return_table, no_resolve, ...)
+        local result = calculate_context_ref(context, return_table, no_resolve, ...)
 
         if context and context.final_scoring_step then
             CL.resolve_frozen_after_score()
