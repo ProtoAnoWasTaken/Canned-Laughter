@@ -5,7 +5,8 @@ SMODS.Atlas({
     py = 93,
 })
 
-local CL = CannedLaughter
+local CL = rawget(_G, "CannedLaughter") or {}
+CannedLaughter = CL
 
 local BANNED_ANTIQUE_SEALS = {
     canlaugh_phosphate = true,

@@ -1978,6 +1978,7 @@ local function replace_pack_with_trials()
         booster_kind = BT.active_booster_kind,
         booster_card = BT.opened_booster_card,
     })
+    BT.loss_fallback = BT.loss_fallback or BT.additional_trials > 0
     trial_count = trial_count + BT.additional_trials
     local trial_slots = BT.pack_card_slots
     if trial_count == 3 and #BT.pack_card_slots == 3 then
@@ -2093,10 +2094,10 @@ function BT.start()
         highlight_limit = G.pack_cards.config.highlight_limit,
     }
     BT.jumbo_fallback = is_jumbo_booster(booster_card)
-        or BT.has_barter_mercy({
-            booster_kind = BT.active_booster_kind,
-            booster_card = booster_card,
-        })
+    BT.loss_fallback = BT.has_barter_mercy({
+        booster_kind = BT.active_booster_kind,
+        booster_card = booster_card,
+    })
     BT.opened_booster_card = booster_card
     BT.joker_effect_state = {}
     BT.rep_pool = representative_pool(BT.active_booster_kind)
@@ -2540,16 +2541,19 @@ function BT.resolve_trial(card)
         card:start_dissolve(nil, true)
     end
 
+    local partial_success = (BT.successes or 0) >= math.ceil((BT.required or 1) / 2)
+    local can_fall_back = BT.loss_fallback or (BT.jumbo_fallback and partial_success)
+
     if (BT.successes or 0) >= (BT.required or 1) then
         BT.enter_reward_phase()
     elseif not remaining_trial_cards() then
-        if BT.jumbo_fallback and (BT.successes or 0) >= math.ceil((BT.required or 1) / 2) then
+        if can_fall_back then
             BT.return_to_normal_pack()
         else
             exit_failed_barter()
         end
     elseif (BT.failures or 0) >= BT.fail_threshold() or (G.GAME.current_round.hands_left or 0) <= 0 then
-        if BT.jumbo_fallback and (BT.successes or 0) >= math.ceil((BT.required or 1) / 2) then
+        if can_fall_back then
             BT.return_to_normal_pack()
         else
             BT.finish_pending = "fail"
@@ -2719,6 +2723,7 @@ local function clear_trial_state(keep_rewards)
     BT.vanilla_pack_choices = nil
     BT.saved_pack_config = nil
     BT.jumbo_fallback = nil
+    BT.loss_fallback = nil
     BT.opened_booster_card = nil
     BT.mega_success_dispatched = nil
     if not keep_rewards then
@@ -2969,6 +2974,7 @@ local function barter_save_snapshot()
         saved_pack_config = BT.saved_pack_config,
         saved_area_positions = BT.saved_area_positions,
         jumbo_fallback = BT.jumbo_fallback,
+        loss_fallback = BT.loss_fallback,
         saved_hands_left = BT.saved_hands_left,
         saved_discards_left = BT.saved_discards_left,
         mega_success_dispatched = BT.mega_success_dispatched,
@@ -3014,6 +3020,12 @@ function BT.restore_saved_barter()
     BT.jumbo_fallback = saved.jumbo_fallback
     BT.mega_success_dispatched = saved.mega_success_dispatched
     BT.opened_booster_card = opened_booster_card()
+    BT.loss_fallback = saved.loss_fallback
+        or (BT.additional_trials or 0) > 0
+        or BT.has_barter_mercy({
+            booster_kind = saved.active_booster_kind,
+            booster_card = BT.opened_booster_card,
+        })
     BT.reward_booster_kind = saved.reward_booster_kind
 
     if saved.phase == "reward" then
