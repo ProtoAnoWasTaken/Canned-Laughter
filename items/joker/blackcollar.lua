@@ -14,21 +14,6 @@ local function canlaugh_blackcollar_target(card)
     )
 end
 
-local function canlaugh_queue_blackcollar_destruction(target)
-    target.canlaugh_blackcollar_destroyed = true
-
-    G.E_MANAGER:add_event(Event({
-        trigger = "after",
-        delay = 0.4,
-        func = function()
-            if not target.removed and not target.REMOVED and not target.destroyed then
-                SMODS.destroy_cards(target, nil, true)
-            end
-            return true
-        end,
-    }))
-end
-
 SMODS.Joker({
     key = "blackcollar",
     name = "Blackcollar",
@@ -69,6 +54,14 @@ SMODS.Joker({
             return { mult = extra.mult }
         end
 
+        if context.destroying_card
+            and context.cardarea == G.play
+            and canlaugh_blackcollar_target(context.destroying_card)
+            and not context.blueprint
+        then
+            return { remove = true }
+        end
+
         if context.individual
             and context.cardarea == G.play
             and context.other_card
@@ -76,9 +69,8 @@ SMODS.Joker({
             and canlaugh_blackcollar_target(context.other_card)
             and not context.blueprint
         then
-            local target = context.other_card
             extra.mult = extra.mult + extra.mult_gain
-            canlaugh_queue_blackcollar_destruction(target)
+            context.other_card.canlaugh_blackcollar_destroyed = true
             return {
                 message = "Worked!",
                 colour = G.C.MULT,
