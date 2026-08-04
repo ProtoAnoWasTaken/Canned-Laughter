@@ -3,9 +3,12 @@ CannedLaughter = CL
 
 CL.stanczyk_face_joker_keys = CL.stanczyk_face_joker_keys or {
     j_business = true,
+    j_baron = true,
     j_midas_mask = true,
     j_photograph = true,
+    j_reserved_parking = true,
     j_scary_face = true,
+    j_shoot_the_moon = true,
     j_smiley = true,
     j_sock_and_buskin = true,
     j_triboulet = true,
@@ -88,12 +91,14 @@ local function canlaugh_stanczyk_scoring_context(context)
         and (
             context.joker_main
             or context.individual and context.cardarea == G.play
+            or context.individual and context.cardarea == G.hand
             or context.repetition and context.cardarea == G.play
         )
 end
 
-local function canlaugh_stanczyk_proxy_context(context, rank)
+local function canlaugh_stanczyk_proxy_context(context, rank, cardarea)
     local proxy_context = {}
+    local proxy = canlaugh_stanczyk_proxy(rank)
 
     for key, value in pairs(context) do
         proxy_context[key] = value
@@ -104,30 +109,34 @@ local function canlaugh_stanczyk_proxy_context(context, rank)
     proxy_context.after = nil
     proxy_context.final_scoring_step = nil
     proxy_context.individual = true
-    proxy_context.cardarea = G.play
-    proxy_context.other_card = canlaugh_stanczyk_proxy(rank)
+    proxy_context.cardarea = cardarea
+    proxy_context.other_card = proxy
+    proxy_context.scoring_hand = { proxy }
     proxy_context.canlaugh_stanczyk_proxy = true
     return proxy_context
 end
 
-local function canlaugh_stanczyk_face_effects(context, source)
+local function canlaugh_stanczyk_face_effects(context)
     local effects = nil
 
     for _, target in ipairs((G and G.jokers and G.jokers.cards) or {}) do
         local center = target and target.config and target.config.center
-        if target ~= source
-            and center
+        if center
             and CL.stanczyk_face_joker_keys[center.key]
             and not target.debuff
             and not target.removed
             and not target.getting_sliced
         then
             for _, rank in ipairs({ 12, 13 }) do
-                local result = target:calculate_joker(canlaugh_stanczyk_proxy_context(context, rank))
-                if type(result) == "table" then
-                    result.card = result.card or target
+                for _, cardarea in ipairs({ G.play, G.hand }) do
+                    local result = target:calculate_joker(
+                        canlaugh_stanczyk_proxy_context(context, rank, cardarea)
+                    )
+                    if type(result) == "table" then
+                        result.card = result.card or target
+                    end
+                    effects = canlaugh_stanczyk_merge(effects, result)
                 end
-                effects = canlaugh_stanczyk_merge(effects, result)
             end
         end
     end
@@ -152,7 +161,7 @@ if Card and type(Card.calculate_joker) == "function" and CL.stanczyk_calculate_h
             and canlaugh_stanczyk_scoring_context(context)
             and canlaugh_stanczyk_effect_returned(result, post)
         then
-            local proxy_effects = canlaugh_stanczyk_face_effects(context, self)
+            local proxy_effects = canlaugh_stanczyk_face_effects(context)
             result = canlaugh_stanczyk_merge(result, proxy_effects)
         end
 

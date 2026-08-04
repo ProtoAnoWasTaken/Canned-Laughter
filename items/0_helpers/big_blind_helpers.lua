@@ -12,7 +12,6 @@ function CL.register_alternate_big_blind(def)
     end
 
     def.big = { min = 1 }
-    def.boss = { min = 1 }
     def.canlaugh_big_blind = true
     def.canlaugh_collection_tier = 2
     def.discovered = false
@@ -22,6 +21,66 @@ function CL.register_alternate_big_blind(def)
         return false
     end
     SMODS.Blind(def)
+end
+
+if Blind and type(Blind.set_blind) == "function" and not CL.alternate_big_blind_set_hook_installed then
+    CL.alternate_big_blind_set_hook_installed = true
+    local set_blind_ref = Blind.set_blind
+
+    function Blind:set_blind(blind, reset, silent, ...)
+        local game = G and G.GAME
+        local selected_key = game and game.canlaugh_selected_alternate_big
+        local selected_blind = selected_key and G.P_BLINDS and G.P_BLINDS[selected_key]
+
+        if not reset
+            and blind == G.P_BLINDS.bl_big
+            and selected_blind
+            and selected_blind.canlaugh_big_blind
+        then
+            blind = selected_blind
+        end
+
+        return set_blind_ref(self, blind, reset, silent, ...)
+    end
+end
+
+if Blind and type(Blind.get_type) == "function" and not CL.alternate_big_blind_type_hook_installed then
+    CL.alternate_big_blind_type_hook_installed = true
+    local get_type_ref = Blind.get_type
+
+    function Blind:get_type(...)
+        local blind = self.config and self.config.blind
+
+        if blind and blind.canlaugh_big_blind then
+            return "Big"
+        end
+
+        return get_type_ref(self, ...)
+    end
+end
+
+if G and G.FUNCS and type(G.FUNCS.select_blind) == "function" and not CL.alternate_big_blind_select_hook_installed then
+    CL.alternate_big_blind_select_hook_installed = true
+    local select_blind_ref = G.FUNCS.select_blind
+
+    function G.FUNCS.select_blind(e, ...)
+        local game = G and G.GAME
+        local selected_blind = e and e.config and e.config.ref_table
+
+        if game then
+            game.canlaugh_selected_alternate_big = nil
+
+            if game.blind_on_deck == "Big"
+                and selected_blind
+                and selected_blind.canlaugh_big_blind
+            then
+                game.canlaugh_selected_alternate_big = selected_blind.key
+                e.config.ref_table = G.P_BLINDS.bl_big
+            end
+        end
+
+        return select_blind_ref(e, ...)
+    end
 end
 
 function CL.big_blind_roll(trigger_obj, seed, identifier)

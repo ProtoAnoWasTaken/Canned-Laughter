@@ -131,30 +131,32 @@ local function check_discovery_achievements(center)
     end
 end
 
-local function check_original_sin_unlock()
+local function check_original_sin_unlock(force_unlock)
     if not (G and G.jokers and G.jokers.cards and G.jokers.config) then
         return
     end
 
-    if #G.jokers.cards > G.jokers.config.card_limit and type(check_for_unlock) == "function" then
+    if (force_unlock or #G.jokers.cards > G.jokers.config.card_limit)
+        and type(check_for_unlock) == "function"
+    then
         check_for_unlock({ type = "canlaugh_invisible_joker_over_limit" })
     end
 end
 
-local function queue_original_sin_unlock_check()
+local function queue_original_sin_unlock_check(force_unlock)
     if G and G.E_MANAGER and type(Event) == "function" then
         G.E_MANAGER:add_event(Event({
             trigger = "after",
-            delay = 0,
+            delay = 0.1,
             func = function()
-                check_original_sin_unlock()
+                check_original_sin_unlock(force_unlock)
                 return true
             end,
         }))
         return
     end
 
-    check_original_sin_unlock()
+    check_original_sin_unlock(force_unlock)
 end
 
 local function synchronize_current_jokers()
@@ -220,12 +222,29 @@ if Card and type(Card.add_to_deck) == "function" and not CL.achievement_discover
             and center
             and center.set == "Joker"
             and self ~= original_sin.source
+        local prospective_limit = G
+            and G.jokers
+            and G.jokers.config
+            and (G.jokers.config.card_limit or 0)
+        local prospective_count = G
+            and G.jokers
+            and G.jokers.cards
+            and #G.jokers.cards + 1
+        local negative_slot = self
+            and self.edition
+            and self.edition.negative
+            and 1
+            or 0
+        local original_sin_overflow = is_original_sin_copy
+            and prospective_count
+            and prospective_limit
+            and prospective_count > prospective_limit + negative_slot
         local results = { add_to_deck_ref(self, ...) }
 
         if is_original_sin_copy then
             original_sin.copy_added = true
             CL.original_sin_pending = nil
-            queue_original_sin_unlock_check()
+            queue_original_sin_unlock_check(original_sin_overflow)
         end
 
         if center
