@@ -3,6 +3,14 @@ CannedLaughter = CL
 
 local MERCHANT_KEY = "v_canlaugh_spectral_merchant"
 local TYCOON_KEY = "v_canlaugh_spectral_tycoon"
+local GHOST_TYCOON_LOC_KEY = "b_canlaugh_ghost_tycoon"
+local GHOST_TYCOON_LOC_TXT = {
+    name = "Ghost Deck",
+    text = {
+        "Start with {C:spectral,T:v_canlaugh_spectral_merchant}Spectral Merchant{}",
+        "and {C:spectral,T:v_canlaugh_spectral_tycoon}Spectral Tycoon{}",
+    },
+}
 
 local function profile()
     return G
@@ -50,6 +58,27 @@ local function increase_spectral_rate(amount)
     end
 end
 
+local function spectral_tycoon_unlocked()
+    local tycoon = G and G.P_CENTERS and G.P_CENTERS[TYCOON_KEY]
+
+    return tycoon and tycoon.unlocked
+end
+
+local function ensure_ghost_tycoon_loc()
+    local descriptions = G and G.localization and G.localization.descriptions
+    local back_loc = descriptions and descriptions.Back
+
+    if not (back_loc and SMODS and type(SMODS.process_loc_text) == "function") then
+        return false
+    end
+
+    if not back_loc[GHOST_TYCOON_LOC_KEY] then
+        SMODS.process_loc_text(back_loc, GHOST_TYCOON_LOC_KEY, GHOST_TYCOON_LOC_TXT)
+    end
+
+    return back_loc[GHOST_TYCOON_LOC_KEY] ~= nil
+end
+
 local function grant_starting_merchant()
     if not (G and G.GAME) then
         return
@@ -61,6 +90,20 @@ local function grant_starting_merchant()
     end
 
     G.GAME.used_vouchers[MERCHANT_KEY] = true
+    increase_spectral_rate(2)
+end
+
+local function grant_starting_tycoon()
+    if not (G and G.GAME and spectral_tycoon_unlocked()) then
+        return
+    end
+
+    G.GAME.used_vouchers = G.GAME.used_vouchers or {}
+    if G.GAME.used_vouchers[TYCOON_KEY] then
+        return
+    end
+
+    G.GAME.used_vouchers[TYCOON_KEY] = true
     increase_spectral_rate(2)
 end
 
@@ -106,12 +149,19 @@ if not (CL.config and CL.config.disable_edition_modifier_overrides) and SMODS.Ba
         loc_txt = {
             name = "Ghost Deck",
             text = {
-                "Start with the",
-                "{C:spectral,T:v_canlaugh_spectral_merchant}Spectral Merchant{} Voucher",
+                "Start with {C:spectral,T:v_canlaugh_spectral_merchant}Spectral Merchant{}",
             },
         },
+        loc_vars = function()
+            if spectral_tycoon_unlocked() and ensure_ghost_tycoon_loc() then
+                return { key = GHOST_TYCOON_LOC_KEY }
+            end
+
+            return { vars = {} }
+        end,
         apply = function()
             grant_starting_merchant()
+            grant_starting_tycoon()
         end,
     }, true)
 end

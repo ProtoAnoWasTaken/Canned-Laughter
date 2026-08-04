@@ -138,6 +138,7 @@ SMODS.Voucher({
         unlock = {
             "Successfully barter",
             "{C:attention}15{} times",
+            "{C:inactive}(#1#/#2#){}",
         },
     },
     locked_loc_vars = function()

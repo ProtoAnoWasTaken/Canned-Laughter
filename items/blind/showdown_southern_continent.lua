@@ -57,7 +57,7 @@ CL.register_showdown_boss({
     loc_txt = {
         name = "Southern Continent",
         text = {
-            "Unnatural suits,",
+            "Unnatural suits",
             "are debuffed",
         },
     },

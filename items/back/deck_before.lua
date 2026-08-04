@@ -88,12 +88,16 @@ local function canlaugh_starting_rare_spectral()
     local pool = canlaugh_rare_spectral_pool()
     local key = pseudorandom_element(pool, pseudoseed("canlaugh_deck_before_spectral"))
 
-    if not key or not (G and G.consumeables) then
-        return
+    if not (key and G and G.E_MANAGER and Event) then
+        return false
     end
 
     G.E_MANAGER:add_event(Event({
         func = function()
+            if not G.consumeables then
+                return false
+            end
+
             local card = create_card(
                 "Spectral",
                 G.consumeables,
@@ -109,6 +113,8 @@ local function canlaugh_starting_rare_spectral()
             return true
         end,
     }))
+
+    return true
 end
 
 if BT and type(BT.finish_reward_phase) == "function" and not CL.deck_before_soul_cashout_hook_installed then
@@ -217,10 +223,11 @@ SMODS.Back({
     loc_txt = {
         name = "The Deck Before",
         text = {
-            "Start with a random rare",
-            "{C:spectral}Spectral{} card",
+            "Start with a random",
+            "rare {C:spectral}Spectral{} card",
             "{C:legendary}Legendary{} Jokers may appear",
-            "in the shop and may be sacrificed",
+            "in the shop, and may",
+            "be {C:attention,T:tag_canlaugh_executioner}executed{}",
         },
         unlock = {
             "Cash out {C:spectral}The Soul{}",
@@ -232,9 +239,12 @@ SMODS.Back({
             or (args and args.type == "canlaugh_soul_barter_cashed_out")
     end,
     apply = function()
-        if G and G.GAME and not G.GAME.canlaugh_deck_before_spectral_created then
+        if G
+            and G.GAME
+            and not G.GAME.canlaugh_deck_before_spectral_created
+            and canlaugh_starting_rare_spectral()
+        then
             G.GAME.canlaugh_deck_before_spectral_created = true
-            canlaugh_starting_rare_spectral()
         end
     end,
 })
