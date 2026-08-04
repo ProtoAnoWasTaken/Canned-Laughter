@@ -471,7 +471,7 @@ SMODS.Edition({
     canlaugh_native_sound = {
         path = "frozen.ogg",
         pitch = 1,
-        volume = 0.25,
+        volume = 0.125,
     },
     loc_txt = {
         name = "Frozen",
