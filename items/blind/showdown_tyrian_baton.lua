@@ -11,7 +11,7 @@ CL.register_showdown_boss({
         text = {
             "Playing or discarding",
             "uses every card,",
-            "all cards score",
+            "only selected cards score",
         },
     },
 })

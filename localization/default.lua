@@ -80,6 +80,13 @@ local loc = {
     misc = {
         poker_hands = {
             ["Blaze of Glory"] = "Blaze of Glory",
+            ["Flush Six"] = "Flush Six",
+            ["Flush Seven"] = "Flush Seven",
+            ["Flush Eight"] = "Flush Eight",
+            ["Flush Nine"] = "Flush Nine",
+            ["Flush Ten"] = "Flush Ten",
+            ["Flush Eleven"] = "Flush Eleven",
+            ["Flush Toilet"] = "Flush Toilet",
         },
         v_text = {
             ch_c_canlaugh_attrition_after_ante_four = {

@@ -190,6 +190,174 @@ function CL.baton_select_all()
     end
 end
 
+function CL.baton_capture_scoring_cards()
+    local selected_cards = {}
+
+    for _, card in ipairs(G.hand and G.hand.highlighted or {}) do
+        selected_cards[#selected_cards + 1] = card
+    end
+
+    CL.baton_scoring_cards = selected_cards
+end
+
+function CL.baton_set_expanded_scoring_cards(scoring_cards)
+    local expanded_cards = {}
+
+    for _, card in ipairs(scoring_cards or {}) do
+        expanded_cards[card] = true
+    end
+
+    CL.baton_expanded_scoring_cards = expanded_cards
+end
+
+local function baton_uses_selected_scoring_cards(cards)
+    if not CL.boss_active("bl_canlaugh_tyrian_baton") then
+        return false
+    end
+
+    if not (G and G.play and cards == G.play.cards and #cards > 0) then
+        return false
+    end
+
+    local selected_cards = CL.baton_scoring_cards
+    if not selected_cards or #selected_cards == 0 then
+        return false
+    end
+
+    return true
+end
+
+local function baton_contains_all_cards(cards, required_cards)
+    local present = {}
+
+    for _, card in ipairs(cards or {}) do
+        present[card] = true
+    end
+
+    for _, card in ipairs(required_cards or {}) do
+        if not present[card] then
+            return false
+        end
+    end
+
+    return true
+end
+
+local function baton_expand_flush_scoring_cards(cards, selected_scoring_cards)
+    for _, suit in ipairs(SMODS and SMODS.Suit and SMODS.Suit.obj_buffer or {}) do
+        local matching_cards = {}
+
+        for _, card in ipairs(cards) do
+            if card:is_suit(suit, nil, true) then
+                matching_cards[#matching_cards + 1] = card
+            end
+        end
+
+        if baton_contains_all_cards(matching_cards, selected_scoring_cards) then
+            return matching_cards
+        end
+    end
+
+    return selected_scoring_cards
+end
+
+local function baton_expand_flush_five_scoring_cards(cards, selected_scoring_cards)
+    local selected_rank = selected_scoring_cards[1] and selected_scoring_cards[1]:get_id()
+
+    if not selected_rank then
+        return selected_scoring_cards
+    end
+
+    for _, card in ipairs(selected_scoring_cards) do
+        if card:get_id() ~= selected_rank then
+            return selected_scoring_cards
+        end
+    end
+
+    for _, suit in ipairs(SMODS and SMODS.Suit and SMODS.Suit.obj_buffer or {}) do
+        local matching_cards = {}
+
+        for _, card in ipairs(cards) do
+            if card:get_id() == selected_rank and card:is_suit(suit, nil, true) then
+                matching_cards[#matching_cards + 1] = card
+            end
+        end
+
+        if baton_contains_all_cards(matching_cards, selected_scoring_cards) then
+            return matching_cards
+        end
+    end
+
+    return selected_scoring_cards
+end
+
+local function baton_expand_straight_flush_scoring_cards(cards, selected_scoring_cards)
+    local min_length = SMODS and type(SMODS.four_fingers) == "function" and SMODS.four_fingers("straight") or 5
+    local can_skip = SMODS and type(SMODS.shortcut) == "function" and SMODS.shortcut() or false
+    local can_wrap = SMODS and type(SMODS.wrap_around_straight) == "function" and SMODS.wrap_around_straight() or false
+
+    for _, suit in ipairs(SMODS and SMODS.Suit and SMODS.Suit.obj_buffer or {}) do
+        local suited_cards = {}
+
+        for _, card in ipairs(cards) do
+            if card:is_suit(suit, nil, true) then
+                suited_cards[#suited_cards + 1] = card
+            end
+        end
+
+        for _, straight in ipairs(get_straight(suited_cards, min_length, can_skip, can_wrap)) do
+            if baton_contains_all_cards(straight, selected_scoring_cards) then
+                return straight
+            end
+        end
+    end
+
+    return selected_scoring_cards
+end
+
+local function baton_expand_scoring_cards(cards, hand_name, selected_scoring_cards)
+    if hand_name == "Flush Five" then
+        return baton_expand_flush_five_scoring_cards(cards, selected_scoring_cards)
+    end
+
+    if hand_name == "Flush" then
+        return baton_expand_flush_scoring_cards(cards, selected_scoring_cards)
+    end
+
+    if hand_name == "Straight Flush" then
+        return baton_expand_straight_flush_scoring_cards(cards, selected_scoring_cards)
+    end
+
+    local poker_hands = evaluate_poker_hand(cards)
+    local candidates = poker_hands and poker_hands[hand_name] or {}
+
+    for _, candidate in ipairs(candidates) do
+        if baton_contains_all_cards(candidate, selected_scoring_cards) then
+            return candidate
+        end
+    end
+
+    return selected_scoring_cards
+end
+
+local function baton_flush_five_display_name(scoring_cards)
+    local size = #(scoring_cards or {})
+    local flush_names = {
+        [6] = "Flush Six",
+        [7] = "Flush Seven",
+        [8] = "Flush Eight",
+        [9] = "Flush Nine",
+        [10] = "Flush Ten",
+        [11] = "Flush Eleven",
+    }
+
+    if size >= 12 then
+        return "Flush Toilet"
+    end
+
+    return flush_names[size]
+end
+
 if G and G.FUNCS and G.FUNCS.play_cards_from_highlighted and not CL.baton_play_hook_installed then
     CL.baton_play_hook_installed = true
     local play_cards_from_highlighted = G.FUNCS.play_cards_from_highlighted
@@ -199,6 +367,7 @@ if G and G.FUNCS and G.FUNCS.play_cards_from_highlighted and not CL.baton_play_h
 
         local limit = G.hand.config.highlighted_limit
         G.hand.config.highlighted_limit = #G.hand.cards
+        CL.baton_capture_scoring_cards()
         CL.baton_select_all()
         local results = { pcall(play_cards_from_highlighted, e) }
         G.hand.config.highlighted_limit = limit
@@ -231,13 +400,59 @@ if G and G.FUNCS and G.FUNCS.discard_cards_from_highlighted and not CL.baton_dis
     end
 end
 
-if SMODS and SMODS.always_scores and not CL.baton_scoring_hook_installed then
-    CL.baton_scoring_hook_installed = true
-    local always_scores = SMODS.always_scores
+if G and G.FUNCS and type(G.FUNCS.get_poker_hand_info) == "function" and not CL.baton_hand_evaluation_hook_installed then
+    CL.baton_hand_evaluation_hook_installed = true
+    local get_poker_hand_info_ref = G.FUNCS.get_poker_hand_info
+
+    G.FUNCS.get_poker_hand_info = function(cards, ...)
+        if baton_uses_selected_scoring_cards(cards) then
+            local results = { get_poker_hand_info_ref(CL.baton_scoring_cards, ...) }
+            results[4] = baton_expand_scoring_cards(cards, results[1], results[4])
+            CL.baton_set_expanded_scoring_cards(results[4])
+            local display_name = results[1] == "Flush Five" and baton_flush_five_display_name(results[4])
+
+            if display_name then
+                results[2] = localize(display_name, "poker_hands")
+                results[5] = display_name
+            end
+
+            return unpack(results)
+        end
+
+        return get_poker_hand_info_ref(cards, ...)
+    end
+end
+
+if SMODS and type(SMODS.always_scores) == "function" and not CL.baton_expanded_scoring_hook_installed then
+    CL.baton_expanded_scoring_hook_installed = true
+    local always_scores_ref = SMODS.always_scores
 
     function SMODS.always_scores(card)
-        if CL.boss_active("bl_canlaugh_tyrian_baton") then return true end
-        return always_scores(card)
+        if CL.boss_active("bl_canlaugh_tyrian_baton")
+            and CL.baton_expanded_scoring_cards
+            and CL.baton_expanded_scoring_cards[card]
+        then
+            return true
+        end
+
+        return always_scores_ref(card)
+    end
+end
+
+if G and G.FUNCS and type(G.FUNCS.draw_from_play_to_discard) == "function" and not CL.baton_scoring_cards_cleanup_hook_installed then
+    CL.baton_scoring_cards_cleanup_hook_installed = true
+    local draw_from_play_to_discard_ref = G.FUNCS.draw_from_play_to_discard
+
+    G.FUNCS.draw_from_play_to_discard = function(e, ...)
+        local results = { pcall(draw_from_play_to_discard_ref, e, ...) }
+        CL.baton_scoring_cards = nil
+        CL.baton_expanded_scoring_cards = nil
+
+        if not results[1] then
+            error(results[2])
+        end
+
+        return unpack(results, 2)
     end
 end
 
@@ -300,7 +515,7 @@ local function create_tyrian_baton_warning_text()
                             config = {
                                 object = DynaText({
                                     scale = 0.6,
-                                    string = "All cards score",
+                                    string = "Only selected cards score",
                                     maxw = 9,
                                     colours = { G.C.WHITE },
                                     float = true,
