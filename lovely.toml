@@ -45,3 +45,21 @@ payload = '''
                 eligible_card:set_edition(edition, true)
 '''
 match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+position = "after"
+pattern = '''
+    self.config.center_key = cardTable.save_fields.center
+'''
+payload = '''
+if not G.P_CENTERS[self.config.center_key]
+    and cardTable.label == "Drain"
+    and G.P_CENTERS.j_canlaugh_drain
+then
+    self.config.center_key = "j_canlaugh_drain"
+    cardTable.save_fields.center = self.config.center_key
+end
+'''
+match_indent = true
