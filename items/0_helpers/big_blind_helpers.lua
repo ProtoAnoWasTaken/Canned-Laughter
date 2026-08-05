@@ -23,6 +23,39 @@ function CL.register_alternate_big_blind(def)
     SMODS.Blind(def)
 end
 
+if type(ease_background_colour_blind) == "function" and not CL.alternate_big_blind_background_hook_installed then
+    CL.alternate_big_blind_background_hook_installed = true
+    local ease_background_colour_blind_ref = ease_background_colour_blind
+
+    function ease_background_colour_blind(state, blind_override, ...)
+        local active_blind = G and G.GAME and G.GAME.blind
+        local blind_name = blind_override
+            or (active_blind and active_blind.name ~= "" and active_blind.name)
+            or "Small Blind"
+        local temporary_boss
+
+        for _, blind in pairs(G and G.P_BLINDS or {}) do
+            if blind.canlaugh_big_blind and blind.name == blind_name and not blind.boss then
+                blind.boss = { min = 1, max = 10 }
+                temporary_boss = blind
+                break
+            end
+        end
+
+        local results = { pcall(ease_background_colour_blind_ref, state, blind_override, ...) }
+
+        if temporary_boss then
+            temporary_boss.boss = nil
+        end
+
+        if not results[1] then
+            error(results[2])
+        end
+
+        return unpack(results, 2)
+    end
+end
+
 if Blind and type(Blind.set_blind) == "function" and not CL.alternate_big_blind_set_hook_installed then
     CL.alternate_big_blind_set_hook_installed = true
     local set_blind_ref = Blind.set_blind
