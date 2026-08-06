@@ -55,7 +55,7 @@ SMODS.Joker({
         name = "Architect",
         text = {
             "Gives {C:chips}+#2#{} Chips for each",
-            "{C:attention,T:m_canlaugh_concrete}Cement Card{} in your full deck",
+            "{C:attention,T:m_canlaugh_concrete}Concrete Card{} in your full deck",
             "{C:inactive}(Currently {C:chips}+#1#{C:inactive} Chips){}",
         },
     },

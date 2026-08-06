@@ -61,7 +61,7 @@ SMODS.Joker({
         name = "Brick Joke",
         text = {
             "Gives {C:chips}+#2#{} Chips for each",
-            "{C:attention,T:m_canlaugh_concrete}Cement Card{} played this round",
+            "{C:attention,T:m_canlaugh_concrete}Concrete Card{} played this round",
             "{C:inactive}(Does not count first hand){}",
             "{C:inactive}(Currently {C:chips}+#1#{C:inactive} Chips){}",
         },

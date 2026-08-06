@@ -72,7 +72,7 @@ SMODS.Joker({
         name = "Bluecollar",
         text = {
             "{C:attention,T:m_stone}Stone Cards{} become",
-            "{C:attention,T:m_canlaugh_concrete}Cement Cards{} after scoring",
+            "{C:attention,T:m_canlaugh_concrete}Concrete Cards{} after scoring",
         },
     },
     loc_vars = function(self, info_queue, card)
