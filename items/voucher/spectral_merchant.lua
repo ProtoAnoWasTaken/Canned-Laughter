@@ -77,7 +77,25 @@ local function ensure_ghost_tycoon_loc()
         SMODS.process_loc_text(back_loc, GHOST_TYCOON_LOC_KEY, GHOST_TYCOON_LOC_TXT)
     end
 
-    return back_loc[GHOST_TYCOON_LOC_KEY] ~= nil
+    local localization = back_loc[GHOST_TYCOON_LOC_KEY]
+
+    if localization and type(loc_parse_string) == "function" then
+        if not localization.name_parsed and type(localization.name) == "string" then
+            localization.name_parsed = {
+                loc_parse_string(localization.name),
+            }
+        end
+
+        if not localization.text_parsed and type(localization.text) == "table" then
+            localization.text_parsed = {}
+
+            for _, line in ipairs(localization.text) do
+                localization.text_parsed[#localization.text_parsed + 1] = loc_parse_string(line)
+            end
+        end
+    end
+
+    return localization and localization.text_parsed ~= nil
 end
 
 local function grant_starting_merchant()
