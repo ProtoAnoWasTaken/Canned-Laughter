@@ -2477,6 +2477,40 @@ local function exit_failed_barter()
     end
 end
 
+local function discover_trial(trial, card_center)
+    local persistent_center = trial
+        and trial.center_key
+        and G
+        and G.P_CENTERS
+        and G.P_CENTERS[trial.center_key]
+        or (trial and trial.center)
+        or card_center
+
+    if not persistent_center or persistent_center.discovered then
+        return
+    end
+
+    if type(discover_card) == "function" then
+        discover_card(persistent_center)
+    end
+
+    if not persistent_center.discovered then
+        return
+    end
+
+    if card_center then
+        card_center.discovered = true
+    end
+
+    if trial and trial.center then
+        trial.center.discovered = true
+    end
+
+    if trial and trial.center_key and SMODS and SMODS.Centers and SMODS.Centers[trial.center_key] then
+        SMODS.Centers[trial.center_key].discovered = true
+    end
+end
+
 function BT.resolve_trial(card)
     if not BT.active then
         return
@@ -2492,9 +2526,6 @@ function BT.resolve_trial(card)
     end
 
     card.canlaugh_trial_resolved = true
-    if card.config and card.config.center then
-        discover_card(card.config.center)
-    end
     ease_hands_played(-1, true)
 
     local chosen_reps = {}
@@ -2511,6 +2542,7 @@ function BT.resolve_trial(card)
         })
     end
     if passed then
+        discover_trial(trial, center)
         BT.successes = (BT.successes or 0) + 1
         if BT.active_booster_kind ~= "Standard" then
             for _, pack_rat in ipairs(SMODS.find_card("j_canlaugh_pack_rat") or {}) do
