@@ -171,7 +171,8 @@ local function canlaugh_felt_note_blind(context, card)
         return
     end
 
-    state.eligible = big_choice ~= "bl_big"
+    state.eligible = selected_blind.key ~= "bl_big"
+        and not selected_blind.canlaugh_big_blind
     if state.eligible then
         state.card = card
         canlaugh_felt_pulse(card)
