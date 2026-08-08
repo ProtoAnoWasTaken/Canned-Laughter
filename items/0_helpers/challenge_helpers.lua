@@ -650,23 +650,14 @@ if SMODS and type(SMODS.calculate_context) == "function" and not CL.challenge_rg
 
         if CL.challenge_active("double_reacharound") and context and context.ante_change then
             local ante = G.GAME.round_resets and G.GAME.round_resets.ante or 0
+            if G.GAME.canlaugh_double_reacharound_resourceful_loop and ante <= 1 then
+                CL.challenge_win_run()
+            end
             if ante > 8 and not G.GAME.canlaugh_double_reacharound_endless then
                 G.GAME.canlaugh_double_reacharound_resetting = true
                 ease_ante(-(ante - 1))
                 G.GAME.canlaugh_double_reacharound_resetting = nil
             end
-        end
-
-        if CL.challenge_active("double_reacharound")
-            and context
-            and context.selling_card
-            and SMODS.find_card("j_canlaugh_resourceful_joker")
-            and context.card
-            and context.card.config
-            and context.card.config.center
-            and context.card.config.center.consumeable
-        then
-            CL.challenge_win_run()
         end
 
         return calculate_context_ref(context, return_table, no_resolve, ...)

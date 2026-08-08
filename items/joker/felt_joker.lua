@@ -117,12 +117,15 @@ local function canlaugh_felt_apply_steps(state)
     local destination_ante = current_ante - actual_steps
     state.ante = destination_ante
 
-    if CL.challenge_active and CL.challenge_active("double_reacharound") then
+    ease_ante(-actual_steps)
+
+    if CL.challenge_active
+        and CL.challenge_active("double_reacharound")
+        and actual_steps >= 2
+    then
         CL.challenge_win_run()
         return
     end
-
-    ease_ante(-actual_steps)
 
     G.GAME.canlaugh_felt_ante_loops = (G.GAME.canlaugh_felt_ante_loops or 0) + actual_steps
     if type(check_for_unlock) == "function" then

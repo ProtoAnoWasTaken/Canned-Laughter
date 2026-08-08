@@ -236,6 +236,10 @@ local function canlaugh_complete_past(card)
         check_for_unlock({ type = "canlaugh_past_the_curtain" })
     end
 
+    if CL.challenge_active and CL.challenge_active("double_reacharound") then
+        G.GAME.canlaugh_double_reacharound_resourceful_loop = true
+    end
+
     G.E_MANAGER:add_event(Event({
         trigger = "after", delay = 2.0,
         func = function()

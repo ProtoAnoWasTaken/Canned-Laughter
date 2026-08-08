@@ -150,7 +150,8 @@ local loc = {
                 "{C:attention}Jumbo{} and {C:attention}Mega Barters{} need {C:attention}1{} fewer Trial",
             },
             ch_c_canlaugh_double_reacharound_loop = {
-                "Is there even a way out...?",
+                "Reach {C:attention}Ante 1{} with {C:attention}Resourceful Rat{},",
+                "or go back {C:attention}2+ Antes{} with {C:attention}Felt Joker{}",
             },
             ch_c_canlaugh_slay_the_showdown_strength = {
                 "{C:red}Showdown Boss Blinds{} are {C:attention}2X{} larger",
