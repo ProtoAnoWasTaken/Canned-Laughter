@@ -181,6 +181,10 @@ function CL.pick_alternate_big_blind()
 
     local ante = game.round_resets.ante or 1
 
+    if CL.challenge_active and CL.challenge_active("attrition") and ante > 4 then
+        return
+    end
+
     if game.canlaugh_alternate_big_blind_ante == ante then
         return
     end
