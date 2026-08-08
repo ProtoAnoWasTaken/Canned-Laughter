@@ -144,43 +144,51 @@ local function canlaugh_felt_apply_steps(state)
     end
 end
 
-local function canlaugh_felt_note_blind(context, card)
-    local state = canlaugh_felt_state()
-    local ante = G.GAME.round_resets and G.GAME.round_resets.ante or 0
-    if state.ante ~= ante then
-        state.ante = ante
-        state.blinds_selected = 0
-        state.eligible = false
-        state.spent = 0
-        state.used = false
-        state.requested_steps = 0
-        state.moved_steps = 0
-        state.applying = nil
-        state.finished_at_max = false
-        state.card = nil
-    end
-
-    if context.canlaugh_spyware then
+local function canlaugh_felt_reset_for_ante(state, ante)
+    if state.ante == ante then
         return
     end
 
-    local choices = G.GAME.round_resets and G.GAME.round_resets.blind_choices
+    state.ante = ante
+    state.blinds_selected = 0
+    state.eligible = false
+    state.spent = 0
+    state.used = false
+    state.requested_steps = 0
+    state.moved_steps = 0
+    state.applying = nil
+    state.finished_at_max = false
+    state.card = nil
+end
+
+local function canlaugh_felt_second_blind_is_substituted()
+    local choices = G and G.GAME and G.GAME.round_resets and G.GAME.round_resets.blind_choices
     local big_choice = choices and choices.Big
-    local selected_blind = context.blind
-    if not (big_choice and selected_blind and selected_blind.key == big_choice) then
+
+    return big_choice
+        and big_choice ~= "bl_big"
+end
+
+local function canlaugh_felt_refresh_eligibility(card)
+    local state = canlaugh_felt_state()
+    if not state then
         return
     end
 
-    state.eligible = selected_blind.key ~= "bl_big"
-        and not selected_blind.canlaugh_big_blind
-    if state.eligible then
+    local ante = G.GAME.round_resets and G.GAME.round_resets.ante or 0
+    canlaugh_felt_reset_for_ante(state, ante)
+
+    state.eligible = canlaugh_felt_second_blind_is_substituted()
+    if state.eligible and card then
         state.card = card
         canlaugh_felt_pulse(card)
     end
+
+    return state
 end
 
 local function canlaugh_felt_spend(amount)
-    local state = canlaugh_felt_state()
+    local state = canlaugh_felt_refresh_eligibility()
     if not (
         state
         and state.eligible
@@ -330,7 +338,7 @@ SMODS.Joker({
     perishable_compat = true,
     calculate = function(self, card, context)
         if context.setting_blind and not context.blueprint then
-            canlaugh_felt_note_blind(context, card)
+            canlaugh_felt_refresh_eligibility(card)
         end
     end,
 })
