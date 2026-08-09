@@ -131,12 +131,6 @@ SMODS.Joker({
     loc_vars = function(self, info_queue, card)
         local extra = card and card.ability and card.ability.extra or self.config.extra
 
-        CannedLaughter.add_unique_tooltip(info_queue, {
-            key = "canlaugh_card_designer",
-            set = "Other",
-            vars = { "vordhosbn" },
-        }, card)
-
         return {
             vars = {
                 extra.chips,

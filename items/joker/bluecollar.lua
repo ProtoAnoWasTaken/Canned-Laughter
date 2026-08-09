@@ -78,11 +78,6 @@ SMODS.Joker({
     loc_vars = function(self, info_queue, card)
         CL.add_unique_tooltip(info_queue, G.P_CENTERS.m_stone, card)
         CL.add_unique_tooltip(info_queue, G.P_CENTERS.m_canlaugh_concrete, card)
-        CL.add_unique_tooltip(info_queue, {
-            key = "canlaugh_card_designer",
-            set = "Other",
-            vars = { "vordhosbn" },
-        }, card)
         return { vars = {} }
     end,
     blueprint_compat = false,
