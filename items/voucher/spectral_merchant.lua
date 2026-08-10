@@ -238,19 +238,18 @@ SMODS.Voucher({
             "{C:attention}2X{} more frequently in the shop",
         },
         unlock = {
-            "Buy {C:attention}25{} {C:spectral}Spectral{} cards",
-            "from the shop or Booster Packs",
+            "Buy {C:attention}25{} {C:spectral}Spectral{} cards total",
+            "from shops or Booster Packs",
+            "{C:inactive}(#1#){}",
         },
     },
     redeem = function()
         increase_spectral_rate(2)
     end,
     locked_loc_vars = function()
-        return { vars = { spectral_purchase_count(), 25 } }
+        return { vars = { spectral_purchase_count() } }
     end,
-    check_for_unlock = function(self, args)
-        return args
-            and args.type == "canlaugh_spectral_shop_purchase"
-            and spectral_purchase_count() >= 25
+    check_for_unlock = function()
+        return spectral_purchase_count() >= 25
     end,
 })
