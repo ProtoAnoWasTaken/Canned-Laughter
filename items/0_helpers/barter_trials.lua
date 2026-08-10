@@ -2512,7 +2512,15 @@ local function discover_trial(trial, card_center)
 end
 
 function BT.resolve_trial(card)
-    if not BT.active then
+    if not BT.active
+        or not card
+        or not card.canlaugh_trial_card
+        or card.canlaugh_trial_resolved
+        or not BT.hand_area
+        or not BT.hand_area.highlighted
+        or #BT.hand_area.highlighted == 0
+        or (G.GAME.current_round.hands_left or 0) <= 0
+    then
         return
     end
 
