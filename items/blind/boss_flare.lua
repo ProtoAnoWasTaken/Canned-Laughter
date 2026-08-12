@@ -10,12 +10,22 @@ CL.register_standard_boss({
     loc_txt = { name = "The Flare", text = { "Hands are capped at", "80% of the goal" } },
 })
 
+local function canlaugh_flare_is_scoring_hand()
+    return G
+        and G.STATES
+        and G.STATE == G.STATES.HAND_PLAYED
+end
+
 if SMODS.calculate_round_score and not CL.flare_score_hook_installed then
     CL.flare_score_hook_installed = true
     local calculate_round_score = SMODS.calculate_round_score
 
     function SMODS.calculate_round_score(flames)
         local score = calculate_round_score(flames)
+        if not canlaugh_flare_is_scoring_hand() then
+            return score
+        end
+
         local cap = CL.boss_active("bl_canlaugh_flare") and G.GAME.blind.chips * 0.8
 
         if cap and score > cap then return cap end

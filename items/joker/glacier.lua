@@ -29,6 +29,12 @@ local function canlaugh_glacier_hand_key()
     }, ":")
 end
 
+local function canlaugh_glacier_is_scoring_hand()
+    return G
+        and G.STATES
+        and G.STATE == G.STATES.HAND_PLAYED
+end
+
 local function canlaugh_glacier_scored_chips(flames)
     local chips = SMODS.get_scoring_parameter("chips", flames)
     local hand_key = canlaugh_glacier_hand_key()
@@ -48,6 +54,10 @@ local function canlaugh_glacier_scored_chips(flames)
 end
 
 local function canlaugh_glacier_cap_score(score, flames)
+    if not canlaugh_glacier_is_scoring_hand() then
+        return score
+    end
+
     if #canlaugh_glacier_cards() == 0 then
         return score
     end

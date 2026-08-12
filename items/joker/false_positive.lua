@@ -29,6 +29,12 @@ local function canlaugh_false_positive_hand_key()
     }, ":")
 end
 
+local function canlaugh_false_positive_is_scoring_hand()
+    return G
+        and G.STATES
+        and G.STATE == G.STATES.HAND_PLAYED
+end
+
 local function canlaugh_false_positive_gain(hand_key)
     for _, card in ipairs(canlaugh_false_positive_cards()) do
         local extra = card.ability and card.ability.extra
@@ -45,6 +51,10 @@ local function canlaugh_false_positive_gain(hand_key)
 end
 
 local function canlaugh_false_positive_cap_score(score)
+    if not canlaugh_false_positive_is_scoring_hand() then
+        return score
+    end
+
     if #canlaugh_false_positive_cards() == 0 then
         return score
     end

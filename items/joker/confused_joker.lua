@@ -17,7 +17,11 @@ local function copied_center(card)
 end
 
 local function copied_joker_ability(card, center)
-    local extra = card.ability.extra
+    local extra = card and card.ability and card.ability.extra
+    if type(extra) ~= "table" then
+        return nil
+    end
+
     if extra.copied_ability_key == center.key and extra.copied_ability then
         return extra.copied_ability
     end
@@ -97,13 +101,22 @@ local function copied_joker_ability(card, center)
 end
 
 local function with_copied_joker(card, center, callback)
+    if not (card and card.config and card.ability and center) then
+        return callback()
+    end
+
     local old_center, old_center_key, old_ability = card.config.center, card.config.center_key, card.ability
+    local copied_ability = copied_joker_ability(card, center)
+    if not copied_ability then
+        return callback()
+    end
+
     card.config.center = center
     card.config.center_key = center.key
-    card.ability = copied_joker_ability(card, center)
+    card.ability = copied_ability
     local results = { pcall(callback) }
 
-    if type(old_ability.extra) == "table" and type(card.ability.extra) == "table" then
+    if type(old_ability.extra) == "table" and card.ability and type(card.ability.extra) == "table" then
         for key, value in pairs(card.ability.extra) do
             old_ability.extra[key] = type(value) == "table" and copy_table(value) or value
         end
