@@ -42,11 +42,13 @@ SMODS.Challenge({
                 local spectral = pseudorandom_element(edition_spectrals, pseudoseed("canlaugh_illegal_deck_spectral"))
 
                 SMODS.add_card({
+                    set = "Tarot",
                     key = tarot,
                     area = G.consumeables,
                     bypass_discovery_center = true,
                 })
                 SMODS.add_card({
+                    set = "Spectral",
                     key = spectral,
                     area = G.consumeables,
                     bypass_discovery_center = true,
