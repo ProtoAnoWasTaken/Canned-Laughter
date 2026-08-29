@@ -46,7 +46,7 @@ function CL.ensure_boss_usage_entries(game)
     game.bosses_used = game.bosses_used or {}
 
     for key, blind in pairs(G.P_BLINDS or {}) do
-        if blind.canlaugh_boss and type(game.bosses_used[key]) ~= "number" then
+        if blind.boss and type(game.bosses_used[key]) ~= "number" then
             game.bosses_used[key] = 0
         end
     end

@@ -49,6 +49,6 @@ SMODS.Challenge({
             "bl_canlaugh_sinker",
         }, pseudoseed("canlaugh_jens_mod_ante_4"))
         G.GAME.perscribed_bosses[6] = "bl_canlaugh_fortune"
-        G.GAME.perscribed_bosses[8] = "bl_violet_vessel"
+        G.GAME.perscribed_bosses[8] = "bl_final_vessel"
     end,
 })
