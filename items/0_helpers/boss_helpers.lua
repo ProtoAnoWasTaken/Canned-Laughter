@@ -39,8 +39,8 @@ function CL.boss_most_played(hands)
     return chosen
 end
 
-function CL.ensure_boss_usage_entries()
-    local game = G and G.GAME
+function CL.ensure_boss_usage_entries(game)
+    game = game or (G and G.GAME)
     if not game then return end
 
     game.bosses_used = game.bosses_used or {}
@@ -53,6 +53,27 @@ function CL.ensure_boss_usage_entries()
 end
 
 CL.ensure_boss_usage_entries()
+
+if Game and type(Game.init_game_object) == "function" and not CL.boss_usage_init_hook_installed then
+    CL.boss_usage_init_hook_installed = true
+    local init_game_object_ref = Game.init_game_object
+
+    function Game:init_game_object(...)
+        local game = init_game_object_ref(self, ...)
+        CL.ensure_boss_usage_entries(game)
+        return game
+    end
+end
+
+if type(reset_blinds) == "function" and not CL.boss_usage_reset_hook_installed then
+    CL.boss_usage_reset_hook_installed = true
+    local reset_blinds_ref = reset_blinds
+
+    function reset_blinds(...)
+        CL.ensure_boss_usage_entries()
+        return reset_blinds_ref(...)
+    end
+end
 
 if type(get_new_boss) == "function" and not CL.boss_usage_hook_installed then
     CL.boss_usage_hook_installed = true
