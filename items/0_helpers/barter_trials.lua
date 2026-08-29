@@ -192,15 +192,20 @@ local function draw_arcane_trial_icon(card, scale_mod, rotate_mod)
     end
 
     local center = card.config and card.config.center or {}
-    local draw_scale = 1.5 + 0.3 * scale_mod
-    local configured_offset = center.canlaugh_icon_offset
-    local offset = configured_offset or {
-        x = 1.5 * card.T.w * (71 - 34) / (2 * 71),
-        y = 1.5 * card.T.h * (95 - 34) / (2 * 95),
+    local draw_target = card.children.center
+    local draw_scale = 1.5 + 0.3 * (scale_mod or 0)
+    local configured_offset = center.canlaugh_icon_offset or {
+        x = draw_scale * draw_target.T.w * (71 - 34) / (2 * 71),
+        y = draw_scale * draw_target.T.h * (95 - 34) / (2 * 95),
+    }
+    local offset_scale = rawget(_G, "PB_UTIL") and 1 / draw_scale or 1
+    local offset = {
+        x = configured_offset.x * offset_scale,
+        y = configured_offset.y * offset_scale,
     }
 
     card.children.floating_sprite:draw_from(
-        card.children.center,
+        draw_target,
         draw_scale - 1,
         0.3 * rotate_mod,
         offset.x,

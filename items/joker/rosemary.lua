@@ -434,7 +434,6 @@ SMODS.Joker({
         text = {
             "Prevent the negative effects of",
             "{C:spectral}Spectral{} cards for {C:attention}#1# action{}",
-            "{C:spectral}White Hole{} costs {C:attention}4{} actions",
             "{C:attention}+1{} action for each {C:attention}Boss Blind{}",
             "defeated while held",
         },
