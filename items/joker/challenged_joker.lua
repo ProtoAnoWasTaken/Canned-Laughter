@@ -170,25 +170,19 @@ if type(get_current_pool) == "function" and not CL.challenged_joker_current_pool
     end
 end
 
-if SMODS and type(SMODS.poll_object) == "function" and not CL.challenged_joker_poll_object_hook_installed then
-    CL.challenged_joker_poll_object_hook_installed = true
-    local canlaugh_poll_object_ref = SMODS.poll_object
+if SMODS and type(SMODS.create_poll_pool) == "function" and not CL.challenged_joker_poll_pool_hook_installed then
+    CL.challenged_joker_poll_pool_hook_installed = true
+    local canlaugh_create_poll_pool_ref = SMODS.create_poll_pool
 
-    function SMODS.poll_object(args)
-        local key = canlaugh_poll_object_ref(args)
+    function SMODS.create_poll_pool(labels, args)
+        local pool, labels_used = canlaugh_create_poll_pool_ref(labels, args)
+        local fallback = canlaugh_challenged_fallback_pool(pool, args)
 
-        if key == "j_joker"
-            and canlaugh_is_challenge_run()
-            and canlaugh_pool_is_joker_like(nil, args)
-            and not canlaugh_pool_key_available(key)
-            and G
-            and G.P_CENTERS
-            and G.P_CENTERS.j_canlaugh_challenged_joker
-        then
-            return "j_canlaugh_challenged_joker"
+        if fallback then
+            return fallback, labels_used
         end
 
-        return key
+        return pool, labels_used
     end
 end
 
