@@ -140,7 +140,7 @@ if SMODS and type(SMODS.create_card) == "function" and not CL.deck_before_legend
 
     function SMODS.create_card(args)
         local is_shop_joker = args
-            and (args.set == "Joker" or args.type == "Joker")
+            and (args.set or args.type) == "Joker"
             and args.area == G.shop_jokers
 
         if is_shop_joker

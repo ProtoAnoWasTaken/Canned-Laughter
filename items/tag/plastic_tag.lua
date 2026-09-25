@@ -98,6 +98,7 @@ if SMODS and type(SMODS.calculate_context) == "function" and not CL.plastic_tag_
                 if key then
                     flags.shop_create_flags = flags.shop_create_flags or {}
                     flags.shop_create_flags.type = "Joker"
+                    flags.shop_create_flags.set = "Joker"
                     flags.shop_create_flags.key = key
                 end
             end
