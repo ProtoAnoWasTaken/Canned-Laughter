@@ -21,8 +21,7 @@ Conceptualization for mod content comes from both existing and unused work in va
 >> It also features an entirely-new **Barter** system, for if you're feeling real greedy for whatever's in the booster pack, with 35 unique trials within to conquer. 
 
 > **Will you add more to the mod?**
->> If I am to release another content update for the mod, I will not make any super definitive answers on it until I can say I have a full drop conceptualized.
->> As of August 3rd, 2026, I have completed V1.1 — **A Trance of Ice and Fire**, and a release of it is available for crash-test.
+>> If I am to release another content update for the mod, I will not make any super definitive answers on it until I can say I have a full drop conceptualized. In its current state, the answer is **no**, or at least no until LocalThunk updates Balatro.
 
 > **Why isn't the mod loaded?**
 >> You might not have extracted it correctly. If there's a Canned Laughter folder *inside of* the Canned Laughter zip archive, you need to make sure it's only one deep.
